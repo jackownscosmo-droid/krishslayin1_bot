@@ -19,7 +19,8 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 # Global Configuration & Security Protocol
 OWNER_ID = int(os.environ.get("OWNER_ID", "123456789"))
-MAIN_BOT_USERNAME = os.environ.get("MAIN_BOT_USERNAME", "krishslayin1_bot").lower().replace("@", "")
+MAIN_BOT_USERNAME = os.environ.get("MAIN_BOT_USERNAME", "").lower().replace("@", "")
+
 LOG_CHANNEL_ID = os.environ.get("LOG_CHANNEL_ID", None)
 
 AUTHORIZED_ADMINS = set([8821066459])
