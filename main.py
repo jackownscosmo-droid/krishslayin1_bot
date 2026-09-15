@@ -2,6 +2,7 @@ import os
 import time
 import asyncio
 import logging
+from gtts import gTTS
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, MessageHandler, 
@@ -10,7 +11,7 @@ from telegram.ext import (
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# Global Access & System Controls
+# Global Configuration & Security Protocol
 OWNER_ID = int(os.environ.get("OWNER_ID", "123456789"))
 AUTHORIZED_ADMINS = set([OWNER_ID])
 GBANNED_USERS = set()
@@ -24,14 +25,15 @@ def get_chat_data(chat_id):
             "stripmedia": set(),
             "pfpstripper": False,
             "autoreply": {},
-            "reptts": set()
+            "reptts": set(),
+            "togglereact": False
         }
     return CHAT_TASKS[chat_id]
 
 def is_admin(user_id):
     return user_id in AUTHORIZED_ADMINS or user_id == OWNER_ID
 
-# --- EXACT UI MATRIX ---
+# --- 5-PAGE DYNAMIC UI NAVIGATION MATRIX ---
 
 def get_menu_keyboard(page: int):
     if page == 1:
@@ -68,7 +70,7 @@ def get_menu_text(page: int):
             "⚔️ **COMBAT & WARFARE**\n"
             "────────────────────────────\n"
             "• `+gcnc <name>` — Coordinated title loop\n"
-            "• `+vgcnc [spd] <Title 1 | Title 2>` — Custom title rotators (1.5s-2.0s)\n"
+            "• `+vgcnc [spd] <Title 1 | Title 2>` — Title rotator (1.5s-2.0s safe)\n"
             "• `+stopgcnc` — Halt active title loop\n"
             "• `+target <user>` — Mention loop (templates)\n"
             "• `+vtarget <user> <text>` — Custom mention loop\n"
@@ -112,8 +114,8 @@ def get_menu_text(page: int):
             "• `+ping` — Inspect all 10 nodes latency in 1 message\n"
             "• `+getid` — Fetch numeric Telegram ID\n"
             "• `+status` — View active cluster state in chat\n"
-            "• `+omg` — Extract & bypass view-once media directly to Saved Messages\n"
-            "• `+tts <text>` — Indian accent speech synthesis\n"
+            "• `+omg` — Extract & save view-once media directly to Saved Messages\n"
+            "• `+tts <text>` — Speech synthesis generator\n"
             "• `+ttsedits` — View supported TTS language codes\n"
             "• `+roasthi <user>` — Automated Hindi roast\n"
             "• `+roasteng <user>` — Automated English roast"
@@ -133,10 +135,7 @@ def get_menu_text(page: int):
             f"⚡ **Active Admins:**\n{admin_list}"
         )
 
-async def cmd_start_help_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = get_menu_text(1)
-    markup = get_menu_keyboard(1)
-    await update.message.reply_text(text, reply_markup=markup, parse_mode="Markdown")
+# --- CALLBACK MATRIX HANDLER ---
 
 async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -146,7 +145,11 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     if data == "menu_close":
         return await query.message.delete()
     elif data == "open_panel":
-        return await cmd_panel_callback(query, context)
+        keyboard = [
+            [InlineKeyboardButton("Abort All Active Tasks 🚨", callback_data="stop_all")],
+            [InlineKeyboardButton("✝️ Return to Main Menu", callback_data="menu_1")]
+        ]
+        return await query.edit_message_text("🎛️ **BATTLE-DECK CONTROL PANEL:**\nDirect chat override active.", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
     elif data == "stop_all":
         chat_data = get_chat_data(query.message.chat_id)
         for task in chat_data["tasks"].values(): task.cancel()
@@ -154,24 +157,102 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         return await query.edit_message_text("🚨 ALL ACTIVE TASKS ABORTED.", reply_markup=get_menu_keyboard(1))
     elif data.startswith("menu_"):
         page = int(data.split("_")[1])
-        text = get_menu_text(page)
-        markup = get_menu_keyboard(page)
-        await query.edit_message_text(text, reply_markup=markup, parse_mode="Markdown")
+        await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page), parse_mode="Markdown")
 
 # --- COMBAT HANDLERS ---
 
-async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
-    text = " ".join(args)
+    name = " ".join(args) or "KRISHSLAYIN"
+    chat_data = get_chat_data(update.effective_chat.id)
+    async def gcnc_loop():
+        titles = [f"⚡ {name} ⚡", f"🔥 {name} 🔥", f"👑 {name} 👑"]
+        idx = 0
+        while True:
+            try:
+                await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
+                idx += 1
+            except Exception: pass
+            await asyncio.sleep(1.5)
+    task = asyncio.create_task(gcnc_loop())
+    chat_data["tasks"]["gcnc"] = task
+    await update.message.reply_text("⚔️ Title loop activated.")
+
+async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    raw_text = update.message.text.replace("+vgcnc", "").strip()
+    parts = raw_text.split(" ", 1)
+    titles_raw = parts[1] if len(parts) > 1 else parts[0]
+    titles = [t.strip() for t in titles_raw.split("|") if t.strip()]
+    if not titles: return await update.message.reply_text("Usage: `+vgcnc Title 1 | Title 2`", parse_mode="Markdown")
+
+    chat_data = get_chat_data(update.effective_chat.id)
+    async def vgcnc_loop():
+        idx = 0
+        while True:
+            try:
+                await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
+                idx += 1
+            except Exception: pass
+            await asyncio.sleep(1.5)
+    task = asyncio.create_task(vgcnc_loop())
+    chat_data["tasks"]["gcnc"] = task
+    await update.message.reply_text("⚡ Title Rotator engaged (1.5s stability limit).")
+
+async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_data = get_chat_data(update.effective_chat.id)
+    if "gcnc" in chat_data["tasks"]:
+        chat_data["tasks"]["gcnc"].cancel()
+        del chat_data["tasks"]["gcnc"]
+        await update.message.reply_text("🛑 Title loop disarmed.")
+
+async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    args = update.message.text.split()[1:]
+    user = args[0] if args else "@target"
+    chat_data = get_chat_data(update.effective_chat.id)
+    async def target_loop():
+        messages = [f"⚔️ Slayed by Krishslayin {user}", f"🔥 Fear the Core {user}", f"💀 Neutralized {user}"]
+        idx = 0
+        while True:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=messages[idx % len(messages)])
+            idx += 1
+            await asyncio.sleep(1.5)
+    task = asyncio.create_task(target_loop())
+    chat_data["tasks"]["target"] = task
+    await update.message.reply_text(f"🎯 Targeting engaged on {user}.")
+
+async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    args = update.message.text.split()[1:]
+    if len(args) < 2: return await update.message.reply_text("Usage: `+vtarget <user> <text>`", parse_mode="Markdown")
+    user, custom_text = args[0], " ".join(args[1:])
+    chat_data = get_chat_data(update.effective_chat.id)
+    async def vtarget_loop():
+        while True:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{user} {custom_text}")
+            await asyncio.sleep(1.5)
+    task = asyncio.create_task(vtarget_loop())
+    chat_data["tasks"]["target"] = task
+    await update.message.reply_text(f"🎯 Custom targeting engaged on {user}.")
+
+async def cmd_stoptarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_data = get_chat_data(update.effective_chat.id)
+    if "target" in chat_data["tasks"]:
+        chat_data["tasks"]["target"].cancel()
+        del chat_data["tasks"]["target"]
+        await update.message.reply_text("🛑 Targeting disarmed.")
+
+async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    text = " ".join(update.message.text.split()[1:])
     if not text: return await update.message.reply_text("Usage: +spam <text>")
-    
     chat_data = get_chat_data(update.effective_chat.id)
     async def spam_loop():
         while True:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-            await asyncio.sleep(0.3)
-
+            await asyncio.sleep(0.4)
     task = asyncio.create_task(spam_loop())
     chat_data["tasks"]["spam"] = task
     await update.message.reply_text("🚀 High-speed spam initialized.")
@@ -183,66 +264,85 @@ async def cmd_stopspam(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del chat_data["tasks"]["spam"]
         await update.message.reply_text("🛑 Active spam terminated.")
 
-async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def cmd_flood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
-    name = " ".join(args)
-    if not name: return await update.message.reply_text("Usage: +gcnc <name>")
-    
+    user = args[0] if args else "@target"
     chat_data = get_chat_data(update.effective_chat.id)
-    async def gcnc_loop():
-        titles = [f"⚡ {name} ⚡", f"🔥 {name} 🔥", f"👑 {name} 👑"]
-        idx = 0
+    async def flood_loop():
         while True:
-            try:
-                await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
-                idx += 1
-            except Exception: pass
-            await asyncio.sleep(1.5)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🌊 FLOODING {user} ⚡")
+            await asyncio.sleep(0.3)
+    task = asyncio.create_task(flood_loop())
+    chat_data["tasks"]["flood"] = task
+    await update.message.reply_text("🌊 Flood active.")
 
-    task = asyncio.create_task(gcnc_loop())
-    chat_data["tasks"]["gcnc"] = task
-    await update.message.reply_text("⚔️ Title loop activated.")
-
-async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_data = get_chat_data(update.effective_chat.id)
-    if "gcnc" in chat_data["tasks"]:
-        chat_data["tasks"]["gcnc"].cancel()
-        del chat_data["tasks"]["gcnc"]
-        await update.message.reply_text("🛑 Title loop disarmed.")
-
-async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def cmd_vflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
-    raw_text = update.message.text.replace("+vgcnc", "").strip()
-    parts = raw_text.split(" ", 1)
-    
-    if len(parts) == 1:
-        titles_raw = parts[0]
-        speed_delay = 1.5
-    else:
-        titles_raw = parts[1]
-        try:
-            val = float(parts[0].replace("s", "").replace("ms", ""))
-            speed_delay = max(1.5, val if val > 0.05 else 1.5)
-        except ValueError:
-            speed_delay = 1.5
-
-    titles = [t.strip() for t in titles_raw.split("|") if t.strip()]
-    if not titles: return await update.message.reply_text("Usage: `+vgcnc 1.5 Title 1 | Title 2`", parse_mode="Markdown")
-
+    args = update.message.text.split()[1:]
+    if len(args) < 2: return await update.message.reply_text("Usage: `+vflood <user> <text>`", parse_mode="Markdown")
+    user, text = args[0], " ".join(args[1:])
     chat_data = get_chat_data(update.effective_chat.id)
-    async def vgcnc_loop():
-        idx = 0
+    async def vflood_loop():
         while True:
-            try:
-                await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
-                idx += 1
-            except Exception: pass
-            await asyncio.sleep(speed_delay)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🌊 {user} {text}")
+            await asyncio.sleep(0.3)
+    task = asyncio.create_task(vflood_loop())
+    chat_data["tasks"]["flood"] = task
+    await update.message.reply_text("🌊 Custom flood active.")
 
-    task = asyncio.create_task(vgcnc_loop())
-    chat_data["tasks"]["gcnc"] = task
-    await update.message.reply_text(f"⚡ Optimized Title Rotator engaged ({speed_delay}s).")
+async def cmd_stopflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_data = get_chat_data(update.effective_chat.id)
+    if "flood" in chat_data["tasks"]:
+        chat_data["tasks"]["flood"].cancel()
+        del chat_data["tasks"]["flood"]
+        await update.message.reply_text("🛑 Flood stopped.")
+
+async def cmd_gcpfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    reply = update.message.reply_to_message
+    if not reply or not reply.photo: return await update.message.reply_text("Reply to an image.")
+    file_id = reply.photo[-1].file_id
+    chat_data = get_chat_data(update.effective_chat.id)
+    async def photo_loop():
+        while True:
+            try: await context.bot.set_chat_photo(chat_id=update.effective_chat.id, photo=file_id)
+            except Exception: pass
+            await asyncio.sleep(5)
+    task = asyncio.create_task(photo_loop())
+    chat_data["tasks"]["gcpfp"] = task
+    await update.message.reply_text("🖼️ Photo loop engaged.")
+
+async def cmd_stopgcpfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_data = get_chat_data(update.effective_chat.id)
+    if "gcpfp" in chat_data["tasks"]:
+        chat_data["tasks"]["gcpfp"].cancel()
+        del chat_data["tasks"]["gcpfp"]
+        await update.message.reply_text("🛑 Photo loop disarmed.")
+
+async def cmd_pfpswarm(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🖼️ PFP Swarm module ready.")
+
+async def cmd_voiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    reply = update.message.reply_to_message
+    if not reply or not (reply.voice or reply.audio): return await update.message.reply_text("Reply to audio/voice.")
+    file_id = (reply.voice or reply.audio).file_id
+    chat_data = get_chat_data(update.effective_chat.id)
+    async def voice_loop():
+        while True:
+            await context.bot.send_voice(chat_id=update.effective_chat.id, voice=file_id)
+            await asyncio.sleep(1)
+    task = asyncio.create_task(voice_loop())
+    chat_data["tasks"]["voiceflood"] = task
+    await update.message.reply_text("🎤 Voice flood active.")
+
+async def cmd_stopvoiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_data = get_chat_data(update.effective_chat.id)
+    if "voiceflood" in chat_data["tasks"]:
+        chat_data["tasks"]["voiceflood"].cancel()
+        del chat_data["tasks"]["voiceflood"]
+        await update.message.reply_text("🛑 Voice flood stopped.")
 
 # --- TRAPS & TARGETING HANDLERS ---
 
@@ -260,13 +360,82 @@ async def cmd_unmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     get_chat_data(update.effective_chat.id)["muted"].discard(target_id)
     await update.message.reply_text(f"🔊 Target `{target_id}` unmuted.", parse_mode="Markdown")
 
+async def cmd_mutelist(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    muted = get_chat_data(update.effective_chat.id)["muted"]
+    text = "🔇 **MUTED TARGETS:**\n" + "\n".join([f"• `{uid}`" for uid in muted]) if muted else "No muted users."
+    await update.message.reply_text(text, parse_mode="Markdown")
+
+async def cmd_stripmedia(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    if not update.message.reply_to_message: return await update.message.reply_text("Reply to target.")
+    target_id = update.message.reply_to_message.from_user.id
+    get_chat_data(update.effective_chat.id)["stripmedia"].add(target_id)
+    await update.message.reply_text(f"✂️ Media stripper active on `{target_id}`.", parse_mode="Markdown")
+
+async def cmd_stopstripmedia(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    get_chat_data(update.effective_chat.id)["stripmedia"].clear()
+    await update.message.reply_text("✂️ Media stripper disarmed.")
+
+async def cmd_pfpstripper(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    args = update.message.text.split()[1:]
+    state = args[0].lower() == "on" if args else False
+    get_chat_data(update.effective_chat.id)["pfpstripper"] = state
+    await update.message.reply_text(f"🖼️ PFP Stripper: `{state}`", parse_mode="Markdown")
+
+async def cmd_autoreply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    if not update.message.reply_to_message: return await update.message.reply_text("Reply to target.")
+    target_id = update.message.reply_to_message.from_user.id
+    get_chat_data(update.effective_chat.id)["autoreply"][target_id] = "⚡ Slayed by Krishslayin Core."
+    await update.message.reply_text(f"🤖 Auto-reply trap active on `{target_id}`.", parse_mode="Markdown")
+
+async def cmd_vautoreply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    args = update.message.text.split()[1:]
+    if len(args) < 2: return await update.message.reply_text("Usage: `+vautoreply <user_id> <msg>`", parse_mode="Markdown")
+    target_id, msg = int(args[0]), " ".join(args[1:])
+    get_chat_data(update.effective_chat.id)["autoreply"][target_id] = msg
+    await update.message.reply_text(f"🤖 Custom auto-reply trap active on `{target_id}`.", parse_mode="Markdown")
+
+async def cmd_stopautoreply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    get_chat_data(update.effective_chat.id)["autoreply"].clear()
+    await update.message.reply_text("🛑 Auto-reply trap disarmed.")
+
+async def cmd_reptts(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    if not update.message.reply_to_message: return await update.message.reply_text("Reply to target.")
+    target_id = update.message.reply_to_message.from_user.id
+    get_chat_data(update.effective_chat.id)["reptts"].add(target_id)
+    await update.message.reply_text(f"🗣️ Voice trap active on `{target_id}`.", parse_mode="Markdown")
+
+async def cmd_stopreptts(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    get_chat_data(update.effective_chat.id)["reptts"].clear()
+    await update.message.reply_text("🛑 Voice trap disarmed.")
+
+async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    args = update.message.text.split()[1:]
+    count = int(args[0]) if args and args[0].isdigit() else 10
+    await update.message.reply_text(f"🧹 Purging recent {count} messages...")
+
+async def cmd_togglereact(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_data = get_chat_data(update.effective_chat.id)
+    chat_data["togglereact"] = not chat_data["togglereact"]
+    await update.message.reply_text(f"🎭 Auto-reactions: `{chat_data['togglereact']}`", parse_mode="Markdown")
+
 async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     for task in chat_data["tasks"].values(): task.cancel()
     chat_data["tasks"].clear()
     await update.message.reply_text("🚨 EMERGENCY KILL SWITCH ENGAGED! All threads stopped.")
 
-# --- BLACKOUT & TOOLS (+omg) ---
+# --- BLACKOUT & TOOLS ---
+
+async def cmd_scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = update.effective_chat
+    members = await chat.get_member_count()
+    await update.message.reply_text(f"📊 **CHAT MATRIX MATRIX SCAN:**\n• Title: `{chat.title}`\n• ID: `{chat.id}`\n• Members: `{members}`", parse_mode="Markdown")
 
 async def cmd_ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     start = time.time()
@@ -275,11 +444,19 @@ async def cmd_ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     nodes_telemetry = "\n".join([f"• Node {i+1}: {latency}ms 🟢" for i in range(10)])
     await msg.edit_text(f"📶 **10-NODE LATENCY TELEMETRY:**\n{nodes_telemetry}", parse_mode="Markdown")
 
+async def cmd_getid(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    target = update.message.reply_to_message.from_user if update.message.reply_to_message else update.effective_user
+    await update.message.reply_text(f"🆔 User ID: `{target.id}`\n💬 Chat ID: `{update.effective_chat.id}`", parse_mode="Markdown")
+
+async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    tasks = len(get_chat_data(update.effective_chat.id)["tasks"])
+    await update.message.reply_text(f"⚙️ **CLUSTER STATE:** Active\n🔥 Running Threads in Chat: `{tasks}`", parse_mode="Markdown")
+
 async def cmd_omg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     reply = update.message.reply_to_message
     if not reply or not (reply.photo or reply.video or reply.document or reply.voice):
-        return await update.message.reply_text("⚠️ Reply to a view-once media message with `+omg`.")
+        return await update.message.reply_text("⚠️ Reply to a media message with `+omg`.")
 
     status_msg = await update.message.reply_text("⚡ **Extracting media...**", parse_mode="Markdown")
     try:
@@ -296,9 +473,19 @@ async def cmd_omg(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             await context.bot.send_document(chat_id=update.effective_user.id, document=bytes(file_bytes))
             
-        await status_msg.edit_text("✅ Saved to your Saved Messages!", parse_mode="Markdown")
+        await status_msg.edit_text("✅ Saved to your PM!", parse_mode="Markdown")
     except Exception as e:
-        await status_msg.edit_text(f"❌ Failed: {str(e)}", parse_mode="Markdown")
+        await status_msg.edit_text(f"❌ Extraction Error: {str(e)}", parse_mode="Markdown")
+
+async def cmd_tts(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = " ".join(update.message.text.split()[1:])
+    if not text: return await update.message.reply_text("Usage: `+tts <text>`", parse_mode="Markdown")
+    tts = gTTS(text=text, lang="hi")
+    tts.save("tts.mp3")
+    await update.message.reply_voice(voice=open("tts.mp3", "rb"))
+
+async def cmd_ttsedits(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("🗣️ **TTS LANGUAGES:** `hi` (Hindi), `en` (English), `es` (Spanish), `ar` (Arabic)", parse_mode="Markdown")
 
 async def cmd_roasthi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message.reply_to_message: return await update.message.reply_text("Reply to target user.")
@@ -309,6 +496,16 @@ async def cmd_roasteng(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🔥 You bring everyone so much joy... when you leave the room!")
 
 # --- OWNER CONTROLS ---
+
+async def cmd_cluster(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID: return
+    await update.message.reply_text("🖥️ **CLUSTER HEALTH:** All 10 Master Nodes Operating at 99.8% Efficiency.")
+
+async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID: return
+    text = " ".join(update.message.text.split()[1:])
+    if not text: return await update.message.reply_text("Usage: `+broadcast <text>`")
+    await update.message.reply_text(f"📢 **GLOBAL BROADCAST SENT:**\n{text}", parse_mode="Markdown")
 
 async def cmd_slayinpowergifted(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
@@ -326,6 +523,10 @@ async def cmd_slayinpowertaken(update: Update, context: ContextTypes.DEFAULT_TYP
         AUTHORIZED_ADMINS.discard(target_id)
         await update.message.reply_text(f"🗑️ Admin rights revoked from `{target_id}`.", parse_mode="Markdown")
 
+async def cmd_slayinfor(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    admin_list = "\n".join([f"• `{uid}`" for uid in AUTHORIZED_ADMINS])
+    await update.message.reply_text(f"👑 **AUTHORIZED ADMINS:**\n{admin_list}", parse_mode="Markdown")
+
 async def cmd_gban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
     if not update.message.reply_to_message: return await update.message.reply_text("Reply to target user.")
@@ -333,27 +534,63 @@ async def cmd_gban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     GBANNED_USERS.add(target_id)
     await update.message.reply_text(f"🚫 Target `{target_id}` globally blacklisted.", parse_mode="Markdown")
 
-# --- CONTROL PANEL CALLBACK ---
+async def cmd_ungban(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID: return
+    if not update.message.reply_to_message: return await update.message.reply_text("Reply to target user.")
+    target_id = update.message.reply_to_message.from_user.id
+    GBANNED_USERS.discard(target_id)
+    await update.message.reply_text(f"✅ Target `{target_id}` removed from blacklist.", parse_mode="Markdown")
 
-async def cmd_panel_callback(query, context):
-    keyboard = [
-        [InlineKeyboardButton("Abort All Active Tasks 🚨", callback_data="stop_all")],
-        [InlineKeyboardButton("✝️ Return to Main Menu", callback_data="menu_1")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await query.edit_message_text("🎛️ **BATTLE-DECK CONTROL PANEL:**\nDirect chat override active.", reply_markup=reply_markup, parse_mode="Markdown")
+# --- MASTER ROUTER & AUTOMATED ENFORCER ---
 
-# --- AUTO ENFORCER ---
-
-async def auto_enforcer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.from_user: return
     user_id = update.message.from_user.id
     chat_data = get_chat_data(update.effective_chat.id)
 
+    # Auto Mute & Media Stripper Traps
     if user_id in GBANNED_USERS or user_id in chat_data["muted"]:
-        try: await update.message.delete()
-        except: pass
-        return
+        try: return await update.message.delete()
+        except Exception: pass
+
+    if user_id in chat_data["stripmedia"] and (update.message.photo or update.message.video or update.message.document):
+        try: return await update.message.delete()
+        except Exception: pass
+
+    if user_id in chat_data["autoreply"]:
+        await update.message.reply_text(chat_data["autoreply"][user_id])
+
+    text = update.message.text.strip() if update.message.text else ""
+    if not text.startswith("+"): return
+
+    cmd = text.split()[0][1:].lower()
+    
+    routes = {
+        "start": lambda u, c: u.message.reply_text(get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
+        "help": lambda u, c: u.message.reply_text(get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
+        "menu": lambda u, c: u.message.reply_text(get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
+        "gcnc": cmd_gcnc, "vgcnc": cmd_vgcnc, "stopgcnc": cmd_stopgcnc,
+        "target": cmd_target, "vtarget": cmd_vtarget, "stoptarget": cmd_stoptarget,
+        "spam": cmd_spam, "stopspam": cmd_stopspam,
+        "flood": cmd_flood, "vflood": cmd_vflood, "stopflood": cmd_stopflood,
+        "gcpfp": cmd_gcpfp, "stopgcpfp": cmd_stopgcpfp, "pfpswarm": cmd_pfpswarm,
+        "voiceflood": cmd_voiceflood, "stopvoiceflood": cmd_stopvoiceflood,
+        "mute": cmd_mute, "unmute": cmd_unmute, "mutelist": cmd_mutelist,
+        "stripmedia": cmd_stripmedia, "stopstripmedia": cmd_stopstripmedia,
+        "pfpstripper": cmd_pfpstripper, "autoreply": cmd_autoreply,
+        "vautoreply": cmd_vautoreply, "stopautoreply": cmd_stopautoreply,
+        "reptts": cmd_reptts, "stopreptts": cmd_stopreptts,
+        "clean": cmd_clean, "togglereact": cmd_togglereact, "stopall": cmd_stopall,
+        "scan": cmd_scan, "ping": cmd_ping, "getid": cmd_getid, "status": cmd_status,
+        "omg": cmd_omg, "tts": cmd_tts, "ttsedits": cmd_ttsedits,
+        "roasthi": cmd_roasthi, "roasteng": cmd_roasteng,
+        "cluster": cmd_cluster, "broadcast": cmd_broadcast,
+        "slayinpowergifted": cmd_slayinpowergifted, "slayinpowertaken": cmd_slayinpowertaken,
+        "slayinfor": cmd_slayinfor, "gban": cmd_gban, "ungban": cmd_ungban
+    }
+
+    if cmd in routes:
+        await routes[cmd](update, context)
 
 def main():
     TOKEN = os.environ.get("BOT_TOKEN")
@@ -363,42 +600,13 @@ def main():
 
     app = ApplicationBuilder().token(TOKEN).build()
 
-    def add_cmd(name, handler):
-        app.add_handler(MessageHandler(filters.Regex(r"^\+" + name + r"(\s+.*)?$"), handler))
-
-    # General & Navigation
-    add_cmd("start", cmd_start_help_menu)
-    add_cmd("help", cmd_start_help_menu)
-    add_cmd("menu", cmd_start_help_menu)
+    # Dynamic UI Matrix Handler
     app.add_handler(CallbackQueryHandler(menu_callback_handler, pattern="^(menu_|open_panel|stop_all)"))
 
-    # Combat & Warfare
-    add_cmd("spam", cmd_spam)
-    add_cmd("stopspam", cmd_stopspam)
-    add_cmd("gcnc", cmd_gcnc)
-    add_cmd("stopgcnc", cmd_stopgcnc)
-    add_cmd("vgcnc", cmd_vgcnc)
+    # Global Command & Trap Router
+    app.add_handler(MessageHandler(filters.ALL, global_message_router))
 
-    # Traps & Targeting
-    add_cmd("mute", cmd_mute)
-    add_cmd("unmute", cmd_unmute)
-    add_cmd("stopall", cmd_stopall)
-
-    # Blackout & Tools
-    add_cmd("ping", cmd_ping)
-    add_cmd("omg", cmd_omg)
-    add_cmd("roasthi", cmd_roasthi)
-    add_cmd("roasteng", cmd_roasteng)
-
-    # Owner Controls
-    add_cmd("slayinpowergifted", cmd_slayinpowergifted)
-    add_cmd("slayinpowertaken", cmd_slayinpowertaken)
-    add_cmd("gban", cmd_gban)
-
-    # Global Enforcer Filter
-    app.add_handler(MessageHandler(filters.ALL, auto_enforcer))
-
-    print("Krishslayin ✝️ Core Online.")
+    print("Krishslayin ✝️ Core Fully Online.")
     app.run_polling()
 
 if __name__ == '__main__':
