@@ -23,6 +23,9 @@ AUTHORIZED_ADMINS = set([OWNER_ID])
 GBANNED_USERS = set()
 CHAT_TASKS = {}
 
+# Fixed Reaction Emoji (Only 🤣 will be used)
+REACTION_EMOJI = "🤣"
+
 # Raw Text Line Arrays (Wrapped safely with Triple Quotes)
 AUTOREPLY_LINES = [
     r"""बड़े दुःख के साथ हँसना पढ़ रहा है😂  𝐓ᴜ तेरी माँ रंडी 🤍😅🔥""",
@@ -75,8 +78,6 @@ ROASTS_ENG = [
     "I'd agree with you, but then we'd both be wrong.",
     "Your brain is like the 404 error page—permanently missing content."
 ]
-
-REACTION_EMOJIS = ["❤️", "👍", "🔥", "🥰", "👏", "😁", "🤔", "😱", "🎉", "🤣", "💩"]
 
 def get_chat_data(chat_id):
     if chat_id not in CHAT_TASKS:
@@ -738,7 +739,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             await context.bot.send_voice(chat_id=chat_id, voice=open("reptts.mp3", "rb"))
         except Exception: pass
 
-    # Reaction Logic Trigger
+    # Fixed Reaction Logic (Always reacts with 🤣)
     react_mode = chat_data.get("react_mode")
     if react_mode is not None and not text.startswith("+"):
         should_react = False
@@ -750,8 +751,11 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
 
         if should_react:
             try:
-                selected_emoji = random.choice(REACTION_EMOJIS)
-                await context.bot.set_message_reaction(chat_id=chat_id, message_id=update.message.message_id, reaction=[selected_emoji])
+                await context.bot.set_message_reaction(
+                    chat_id=chat_id, 
+                    message_id=update.message.message_id, 
+                    reaction=[REACTION_EMOJI]
+                )
             except Exception: pass
 
     # Dynamic Commands Router
