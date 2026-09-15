@@ -17,20 +17,19 @@ from telegram.ext import (
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# Global Configuration & Security Protocol
+# Global Configuration
 OWNER_ID = int(os.environ.get("OWNER_ID", "123456789"))
 MAIN_BOT_USERNAME = os.environ.get("MAIN_BOT_USERNAME", "").lower().replace("@", "")
-
 LOG_CHANNEL_ID = os.environ.get("LOG_CHANNEL_ID", None)
 
-AUTHORIZED_ADMINS = set([8821066459])
+AUTHORIZED_ADMINS = set([8821066459, OWNER_ID])
 GBANNED_USERS = set()
 CHAT_TASKS = {}
 
 REACTION_EMOJI = "🤣"
 
-# Main-Bot-Only Commands list
-MAIN_BOT_ONLY_COMMANDS = {"menu", "start", "gban", "ungban", "mute", "unmute"}
+# Commands exclusive to Main Bot UI/Admin Management
+MAIN_BOT_ONLY_COMMANDS = {"menu", "start", "gban", "ungban", "mute", "unmute", "slayinpowergifted", "slayinpowertaken"}
 
 AUTOREPLY_LINES = [
     r"""बड़े दुःख के साथ हँसना पढ़ रहा है😂  𝐓ᴜ तेरी माँ रंडी 🤍😅🔥""",
@@ -80,7 +79,6 @@ def is_admin(user_id):
     return user_id in AUTHORIZED_ADMINS or user_id == OWNER_ID
 
 async def send_log(context: ContextTypes.DEFAULT_TYPE, text: str):
-    """Log channel notification system"""
     if LOG_CHANNEL_ID:
         try:
             await context.bot.send_message(chat_id=int(LOG_CHANNEL_ID), text=text, parse_mode="Markdown")
@@ -188,6 +186,26 @@ def get_menu_text(page: int):
             f"⚡ Active Admins:\n{admin_list}"
         )
 
+# --- Emergency Universal Reset ---
+
+async def hard_stop_all(chat_id: int, context: ContextTypes.DEFAULT_TYPE, user_id: int):
+    chat_data = get_chat_data(chat_id)
+    
+    # 1. Stop all Async Tasks
+    for task_name, task in list(chat_data["tasks"].items()):
+        task.cancel()
+    chat_data["tasks"].clear()
+
+    # 2. Reset all Passive Traps & Modes
+    chat_data["muted"].clear()
+    chat_data["stripmedia"].clear()
+    chat_data["autoreply"].clear()
+    chat_data["reptts"].clear()
+    chat_data["pfpstripper"] = False
+    chat_data["react_mode"] = None
+
+    await send_log(context, f"🚨 *ABSOLUTE KILL SWITCH TRIGGERED*\nChat: `{chat_id}`\nAdmin/User: `{user_id}`")
+
 # --- Menu Callbacks ---
 
 async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -204,12 +222,8 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         ]
         return await query.edit_message_text("🎛️ BATTLE-DECK CONTROL PANEL:\nDirect chat override active.", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
     elif data == "stop_all":
-        chat_data = get_chat_data(query.message.chat_id)
-        for task in list(chat_data["tasks"].values()): task.cancel()
-        chat_data["tasks"].clear()
-        chat_data["react_mode"] = None
-        await send_log(context, f"🚨 *EMERGENCY KILL SWITCH* triggered via Control Panel in Chat `{query.message.chat_id}` by User `{query.from_user.id}`")
-        return await query.edit_message_text("🚨 ALL ACTIVE TASKS ABORTED.", reply_markup=get_menu_keyboard(1))
+        await hard_stop_all(query.message.chat_id, context, query.from_user.id)
+        return await query.edit_message_text("🚨 ALL ACTIVE TASKS & TRAPS TERMINATED 100%.", reply_markup=get_menu_keyboard(1))
     elif data.startswith("menu_"):
         page = int(data.split("_")[1])
         await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page), parse_mode="Markdown")
@@ -231,10 +245,10 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
                 idx += 1
             except Exception: pass
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(0.8) # Maximum safe limit for API limits
     task = asyncio.create_task(gcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="⚔️ Title loop activated.")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="⚔️ High-Speed Title loop activated.")
 
 async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -254,7 +268,7 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
                 idx += 1
             except Exception: pass
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(0.8)
     task = asyncio.create_task(vgcnc_loop())
     chat_data["tasks"]["gcnc"] = task
     await context.bot.send_message(chat_id=update.effective_chat.id, text="⚡ Title Rotator engaged.")
@@ -277,10 +291,9 @@ async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
         while True:
             line = random.choice(TARGET_LINES)
             await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{user}\n{line}")
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(0.3)
     task = asyncio.create_task(target_loop())
     chat_data["tasks"]["target"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🎯 Targeting engaged on {user}.")
 
 async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -293,10 +306,9 @@ async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def vtarget_loop():
         while True:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{user} {custom_text}")
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(0.3)
     task = asyncio.create_task(vtarget_loop())
     chat_data["tasks"]["target"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🎯 Custom targeting engaged on {user}.")
 
 async def cmd_stoptarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
@@ -315,11 +327,9 @@ async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def spam_loop():
         while True:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-            await asyncio.sleep(0.4)
+            await asyncio.sleep(0.15)
     task = asyncio.create_task(spam_loop())
     chat_data["tasks"]["spam"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🚀 High-speed spam initialized.")
-    await send_log(context, f"⚠️ *SPAM STARTED*\nChat: `{update.effective_chat.id}`\nAdmin: `{update.effective_user.id}`")
 
 async def cmd_stopspam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
@@ -339,10 +349,9 @@ async def cmd_flood(update: Update, context: ContextTypes.DEFAULT_TYPE):
         while True:
             for line in FLOOD_LINES:
                 await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{user}\n{line}")
-                await asyncio.sleep(0.4)
+                await asyncio.sleep(0.15)
     task = asyncio.create_task(flood_loop())
     chat_data["tasks"]["flood"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🌊 Flood active on {user}.")
 
 async def cmd_vflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -355,10 +364,9 @@ async def cmd_vflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def vflood_loop():
         while True:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🌊 {user} {text}")
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(0.15)
     task = asyncio.create_task(vflood_loop())
     chat_data["tasks"]["flood"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🌊 Custom flood active.")
 
 async def cmd_stopflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
@@ -379,10 +387,9 @@ async def cmd_gcpfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
         while True:
             try: await context.bot.set_chat_photo(chat_id=update.effective_chat.id, photo=file_id)
             except Exception: pass
-            await asyncio.sleep(5)
+            await asyncio.sleep(4)
     task = asyncio.create_task(photo_loop())
     chat_data["tasks"]["gcpfp"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🖼️ Photo loop engaged.")
 
 async def cmd_stopgcpfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
@@ -402,10 +409,9 @@ async def cmd_voiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def voice_loop():
         while True:
             await context.bot.send_voice(chat_id=update.effective_chat.id, voice=file_id)
-            await asyncio.sleep(1)
+            await asyncio.sleep(0.3)
     task = asyncio.create_task(voice_loop())
     chat_data["tasks"]["voiceflood"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🎤 Voice flood active.")
 
 async def cmd_stopvoiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
@@ -547,12 +553,8 @@ async def cmd_togglereact(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
-    chat_data = get_chat_data(update.effective_chat.id)
-    for task in list(chat_data["tasks"].values()): task.cancel()
-    chat_data["tasks"].clear()
-    chat_data["react_mode"] = None
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🚨 EMERGENCY KILL SWITCH ENGAGED! All threads stopped.")
-    await send_log(context, f"🚨 *EMERGENCY KILL SWITCH ENGAGED*\nChat: `{update.effective_chat.id}`\nAdmin: `{update.effective_user.id}`")
+    await hard_stop_all(update.effective_chat.id, context, update.effective_user.id)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="🚨 ALL THREADS, TRAPS & ACTIVE TASKS KILLED SUCCESSFULLY!")
 
 # --- Utilities & Owner Commands ---
 
@@ -696,14 +698,12 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     chat_data = get_chat_data(chat_id)
     text = update.message.text.strip() if update.message.text else ""
 
-    # Bot Specific Filtering
     bot_username = (await context.bot.get_me()).username.lower()
-    is_main_bot = (bot_username == MAIN_BOT_USERNAME)
+    is_main_bot = (MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME)
 
     # Owner Command Auto Delete
     if user_id == OWNER_ID and text.startswith("+"):
-        try: 
-            await update.message.delete()
+        try: await update.message.delete()
         except Exception: pass
 
     # PFP Stripper check
@@ -745,7 +745,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             await context.bot.send_voice(chat_id=chat_id, voice=open("reptts.mp3", "rb"))
         except Exception: pass
 
-    # Fixed Reaction Logic
+    # Reaction Logic
     react_mode = chat_data.get("react_mode")
     if react_mode is not None and not text.startswith("+"):
         should_react = False
@@ -764,15 +764,14 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
                 )
             except Exception: pass
 
-    # Dynamic Commands Router
+    # Commands Router Execution across Cluster
     if text.startswith("+"):
         cmd = text.split()[0][1:].lower()
 
-        # Check if the command is exclusive to the MAIN BOT
+        # Restrict exclusive UI commands to Main Bot only
         if cmd in MAIN_BOT_ONLY_COMMANDS and not is_main_bot:
-            return  # Non-main bots will completely ignore main commands
+            return
 
-        # Auto-delete for regular admin commands
         if user_id != OWNER_ID:
             try: await update.message.delete()
             except Exception: pass
