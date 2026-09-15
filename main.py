@@ -4,7 +4,7 @@ import random
 import asyncio
 import logging
 from gtts import gTTS
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReactionTypeEmoji
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, MessageHandler, 
     CallbackQueryHandler, filters, ContextTypes
@@ -526,13 +526,13 @@ async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     chat_data = get_chat_data(update.effective_chat.id)
     
-    # 1. Cancel all background running tasks (spam, gcnc, target, etc.)
+    # 1. Stop all active loops
     task_count = len(chat_data["tasks"])
     for key, task in list(chat_data["tasks"].items()):
         task.cancel()
     chat_data["tasks"].clear()
 
-    # 2. Reset all passive traps & auto-react
+    # 2. Reset traps & reactions
     chat_data["togglereact"] = False
     chat_data["muted"].clear()
     chat_data["stripmedia"].clear()
@@ -540,7 +540,7 @@ async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data["reptts"].clear()
     chat_data["pfpstripper"] = False
 
-    await update.message.reply_text(f"🚨 **MASTER KILL SWITCH EXECUTED!**\n• Stopped `{task_count}` Active Loops\n• Auto-Reaction & Traps Resetted to OFF.", parse_mode="Markdown")
+    await update.message.reply_text(f"🚨 **MASTER KILL SWITCH EXECUTED!**\n• Stopped `{task_count}` Active Loops\n• Reset Auto-Reaction & Traps.", parse_mode="Markdown")
 
 # --- Blackout & Tools ---
 
@@ -701,13 +701,13 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     if user_id in chat_data["autoreply"]:
         await update.message.reply_text(chat_data["autoreply"][user_id])
 
-    # 2. Auto Reaction Engine (Fixed with ReactionTypeEmoji array)
+    # 2. Universal Version Safe Reaction Handler
     if chat_data.get("togglereact", False):
         try:
             await context.bot.set_message_reaction(
                 chat_id=chat_id,
                 message_id=update.message.message_id,
-                reaction=[ReactionTypeEmoji(emoji="🤣")]
+                reaction=[{"type": "emoji", "emoji": "🤣"}]
             )
         except Exception as e:
             logging.error(f"Reaction Failed: {e}")
