@@ -1,39 +1,3 @@
-import os
-import time
-import random
-import asyncio
-import logging
-from gtts import gTTS
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    ApplicationBuilder, MessageHandler, 
-    CallbackQueryHandler, filters, ContextTypes, CommandHandler
-)
-
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-
-# Global Configuration & Security Protocol
-OWNER_ID = int(os.environ.get("OWNER_ID", "123456789"))
-AUTHORIZED_ADMINS = set([OWNER_ID])
-GBANNED_USERS = set()
-CHAT_TASKS = {}
-
-# Dynamic High-Class Roast Database
-ROASTS_HI = [
-    "Teri shakal dekh ke Telegram ka server bhi crash ho jaye!",
-    "Itna dimaag agar sahi jagah lagaya hota toh aaj NASA me hota, yahan bakchodi nahi kar raha hota!",
-    "Tujhe dekh kar toh Google bhi bolta hai: 'Search Not Found'!",
-    "Teri baaten sun kar mera battery percentage bhi drop ho gaya!",
-    "Bhai tu paida hua tha ya kisi ne galti se spawn kar diya?",
-    "Tere se zyada fast toh BSNL ka internet chalta hai!",
-    "Tu akela aisa insaan hai jise dekh ke Wi-Fi ke signal bhi weak ho jaate hain!",
-    "Bolne se pehle soch liya kar, waise sochne ke liye dimaag lagta hai jo tere paas hai nahi!",
-    "Tera dimaag airplane mode par rehta hai kya hamesha?",
-    "Tere dimaag me memory card lagane ki jagah hai, par software hi missing hai!",
-    "Tujhse baat karke lagta hai jaise kisi 2G network par video call kar raha hoon!",
-    "Tujhe dekh ke lagta hai God ne creation ke waqt 'Ctrl+Z' dabana bhool gaya!",
-    "Tere logic sun ke toh AI bhi bol de 'System Crash, Rebooting'!",
-    "Tera attitude dekh ke lagta hai jaise tu nahi, pura server tere baap ka hai!",
     "Tu bas DP badal, baaki aukat aur dimaag toh purane model ka hi rehna hai!",
     "Teri baaton me itna lag hai ki reply sunne ke liye next birthday ka wait karna padta hai!"
 ]
@@ -70,12 +34,14 @@ CUSTOM_RAW_LINES = [
 ]
 
 CUSTOM_RANDOM_MESSAGES = [
-    "⚡ Krishslayin System Core is scanning the matrix...",
-    "🔥 Warning: High voltage energy detected in chat!",
-    "💀 Another day, another target neutralized by the core.",
-    "🚀 Nodes are fully synchronized and operational.",
-    "👑 Dominance established. Bow down to the core.",
-    "🛡️ Defense grid is active and watching everything."
+    "⚡ Reacted "चुप रंडी " to your message...",
+    "🔥 SᴜN AʟɴC VᴀʟE FᴏɴT Mᴇ TᴇʀI Mᴀ CʜᴏᴅᴜɴG A 🌙🖤",
+    "💀 ᴍᴀᴀғɪ ᴍᴀɴɢʟᴇ ᴋʏᴀ ᴘᴀᴛᴀ ʙᴀᴅʙᴏʏ ᴍᴀᴀғ ᴋʀᴅ ᴛᴜᴊᴇ.",
+    "🚀 ⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈
+
+तेरो ma ko चोदने k baad उसको ऐसे चंद सितारए नजर आएंगे.",
+    "👑 teri ma chodke behal krdi .",
+    "🛡️ teri ma hi chod di chup rndike bche."
 ]
 
 def get_chat_data(chat_id):
