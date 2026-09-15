@@ -4,7 +4,7 @@ import random
 import asyncio
 import logging
 from gtts import gTTS
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReactionTypeEmoji
 from telegram.ext import (
     ApplicationBuilder, MessageHandler, 
     CallbackQueryHandler, filters, ContextTypes
@@ -18,7 +18,6 @@ AUTHORIZED_ADMINS = set([OWNER_ID])
 GBANNED_USERS = set()
 CHAT_TASKS = {}
 
-# Dynamic High-Class Roast Database
 ROASTS_HI = [
     "Teri shakal dekh ke Telegram ka server bhi crash ho jaye!",
     "Itna dimaag agar sahi jagah lagaya hota toh aaj NASA me hota, yahan bakchodi nahi kar raha hota!",
@@ -201,7 +200,7 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         page = int(data.split("_")[1])
         await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page), parse_mode="Markdown")
 
-# --- Fast Combat Handlers ---
+# --- Commands ---
 
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -441,8 +440,6 @@ async def cmd_stopvoiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE)
         del chat_data["tasks"]["voiceflood"]
         await update.message.reply_text("🛑 Voice flood stopped.")
 
-# --- Traps & Targeting Handlers ---
-
 async def cmd_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     if not update.message.reply_to_message: return await update.message.reply_text("Reply to target user.")
@@ -526,13 +523,11 @@ async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     chat_data = get_chat_data(update.effective_chat.id)
     
-    # 1. Stop all active loops
     task_count = len(chat_data["tasks"])
     for key, task in list(chat_data["tasks"].items()):
         task.cancel()
     chat_data["tasks"].clear()
 
-    # 2. Reset traps & reactions
     chat_data["togglereact"] = False
     chat_data["muted"].clear()
     chat_data["stripmedia"].clear()
@@ -541,8 +536,6 @@ async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data["pfpstripper"] = False
 
     await update.message.reply_text(f"🚨 **MASTER KILL SWITCH EXECUTED!**\n• Stopped `{task_count}` Active Loops\n• Reset Auto-Reaction & Traps.", parse_mode="Markdown")
-
-# --- Blackout & Tools ---
 
 async def cmd_scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
@@ -601,41 +594,25 @@ async def cmd_tts(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_ttsedits(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🗣️ **TTS LANGUAGES:** `hi` (Hindi), `en` (English), `es` (Spanish), `ar` (Arabic)", parse_mode="Markdown")
 
-# --- Dynamic Targeted Roast Handlers ---
-
 async def cmd_roasthi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = update.message.text.split()[1:]
     target_name = None
-    
     if update.message.reply_to_message and update.message.reply_to_message.from_user:
         target_name = f"@{update.message.reply_to_message.from_user.username}" if update.message.reply_to_message.from_user.username else update.message.reply_to_message.from_user.first_name
     elif args:
         target_name = " ".join(args)
-        
     roast_text = random.choice(ROASTS_HI)
-    
-    if target_name:
-        await update.message.reply_text(f"🔥 {target_name} {roast_text}")
-    else:
-        await update.message.reply_text(f"🔥 {roast_text}")
+    await update.message.reply_text(f"🔥 {target_name} {roast_text}" if target_name else f"🔥 {roast_text}")
 
 async def cmd_roasteng(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = update.message.text.split()[1:]
     target_name = None
-    
     if update.message.reply_to_message and update.message.reply_to_message.from_user:
         target_name = f"@{update.message.reply_to_message.from_user.username}" if update.message.reply_to_message.from_user.username else update.message.reply_to_message.from_user.first_name
     elif args:
         target_name = " ".join(args)
-        
     roast_text = random.choice(ROASTS_ENG)
-    
-    if target_name:
-        await update.message.reply_text(f"🔥 {target_name} {roast_text}")
-    else:
-        await update.message.reply_text(f"🔥 {roast_text}")
-
-# --- Owner Controls ---
+    await update.message.reply_text(f"🔥 {target_name} {roast_text}" if target_name else f"🔥 {roast_text}")
 
 async def cmd_cluster(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
@@ -681,7 +658,7 @@ async def cmd_ungban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     GBANNED_USERS.discard(target_id)
     await update.message.reply_text(f"✅ Target `{target_id}` removed from blacklist.", parse_mode="Markdown")
 
-# --- Master Router & Automated Enforcer ---
+# --- Fixed Global Router & Reaction System ---
 
 async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.from_user: return
@@ -689,7 +666,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     chat_id = update.effective_chat.id
     chat_data = get_chat_data(chat_id)
 
-    # 1. Auto Mute & Media Stripper Traps
+    # 1. Traps Execution (Mute / Strip media)
     if user_id in GBANNED_USERS or user_id in chat_data["muted"]:
         try: return await update.message.delete()
         except Exception: pass
@@ -701,49 +678,48 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     if user_id in chat_data["autoreply"]:
         await update.message.reply_text(chat_data["autoreply"][user_id])
 
-    # 2. Universal Version Safe Reaction Handler
+    # 2. FIXED: Auto-Reaction system using official ReactionTypeEmoji class
     if chat_data.get("togglereact", False):
         try:
             await context.bot.set_message_reaction(
                 chat_id=chat_id,
                 message_id=update.message.message_id,
-                reaction=[{"type": "emoji", "emoji": "🤣"}]
+                reaction=[ReactionTypeEmoji(emoji="🤣")]
             )
         except Exception as e:
-            logging.error(f"Reaction Failed: {e}")
+            logging.error(f"Reaction execution error: {e}")
 
-    # 3. Command Route Router
+    # 3. FIXED: Command Router Non-blocking Execution
     text = update.message.text.strip() if update.message.text else ""
-    if not text.startswith("+"): return
+    if text.startswith("+"):
+        cmd = text.split()[0][1:].lower()
+        
+        routes = {
+            "start": lambda u, c: u.message.reply_text(get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
+            "help": lambda u, c: u.message.reply_text(get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
+            "menu": lambda u, c: u.message.reply_text(get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
+            "gcnc": cmd_gcnc, "vgcnc": cmd_vgcnc, "stopgcnc": cmd_stopgcnc,
+            "target": cmd_target, "vtarget": cmd_vtarget, "stoptarget": cmd_stoptarget,
+            "spam": cmd_spam, "stopspam": cmd_stopspam,
+            "flood": cmd_flood, "vflood": cmd_vflood, "stopflood": cmd_stopflood,
+            "gcpfp": cmd_gcpfp, "stopgcpfp": cmd_stopgcpfp, "pfpswarm": cmd_pfpswarm,
+            "voiceflood": cmd_voiceflood, "stopvoiceflood": cmd_stopvoiceflood,
+            "mute": cmd_mute, "unmute": cmd_unmute, "mutelist": cmd_mutelist,
+            "stripmedia": cmd_stripmedia, "stopstripmedia": cmd_stopstripmedia,
+            "pfpstripper": cmd_pfpstripper, "autoreply": cmd_autoreply,
+            "vautoreply": cmd_vautoreply, "stopautoreply": cmd_stopautoreply,
+            "reptts": cmd_reptts, "stopreptts": cmd_stopreptts,
+            "clean": cmd_clean, "togglereact": cmd_togglereact, "stopall": cmd_stopall,
+            "scan": cmd_scan, "ping": cmd_ping, "getid": cmd_getid, "status": cmd_status,
+            "omg": cmd_omg, "tts": cmd_tts, "ttsedits": cmd_ttsedits,
+            "roasthi": cmd_roasthi, "roasteng": cmd_roasteng,
+            "cluster": cmd_cluster, "broadcast": cmd_broadcast,
+            "slayinpowergifted": cmd_slayinpowergifted, "slayinpowertaken": cmd_slayinpowertaken,
+            "slayinfor": cmd_slayinfor, "gban": cmd_gban, "ungban": cmd_ungban
+        }
 
-    cmd = text.split()[0][1:].lower()
-    
-    routes = {
-        "start": lambda u, c: u.message.reply_text(get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
-        "help": lambda u, c: u.message.reply_text(get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
-        "menu": lambda u, c: u.message.reply_text(get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
-        "gcnc": cmd_gcnc, "vgcnc": cmd_vgcnc, "stopgcnc": cmd_stopgcnc,
-        "target": cmd_target, "vtarget": cmd_vtarget, "stoptarget": cmd_stoptarget,
-        "spam": cmd_spam, "stopspam": cmd_stopspam,
-        "flood": cmd_flood, "vflood": cmd_vflood, "stopflood": cmd_stopflood,
-        "gcpfp": cmd_gcpfp, "stopgcpfp": cmd_stopgcpfp, "pfpswarm": cmd_pfpswarm,
-        "voiceflood": cmd_voiceflood, "stopvoiceflood": cmd_stopvoiceflood,
-        "mute": cmd_mute, "unmute": cmd_unmute, "mutelist": cmd_mutelist,
-        "stripmedia": cmd_stripmedia, "stopstripmedia": cmd_stopstripmedia,
-        "pfpstripper": cmd_pfpstripper, "autoreply": cmd_autoreply,
-        "vautoreply": cmd_vautoreply, "stopautoreply": cmd_stopautoreply,
-        "reptts": cmd_reptts, "stopreptts": cmd_stopreptts,
-        "clean": cmd_clean, "togglereact": cmd_togglereact, "stopall": cmd_stopall,
-        "scan": cmd_scan, "ping": cmd_ping, "getid": cmd_getid, "status": cmd_status,
-        "omg": cmd_omg, "tts": cmd_tts, "ttsedits": cmd_ttsedits,
-        "roasthi": cmd_roasthi, "roasteng": cmd_roasteng,
-        "cluster": cmd_cluster, "broadcast": cmd_broadcast,
-        "slayinpowergifted": cmd_slayinpowergifted, "slayinpowertaken": cmd_slayinpowertaken,
-        "slayinfor": cmd_slayinfor, "gban": cmd_gban, "ungban": cmd_ungban
-    }
-
-    if cmd in routes:
-        await routes[cmd](update, context)
+        if cmd in routes:
+            await routes[cmd](update, context)
 
 def main():
     TOKEN = os.environ.get("BOT_TOKEN")
@@ -752,11 +728,7 @@ def main():
         return
 
     app = ApplicationBuilder().token(TOKEN).build()
-
-    # Dynamic UI Matrix Handler
     app.add_handler(CallbackQueryHandler(menu_callback_handler, pattern="^(menu_|open_panel|stop_all)"))
-
-    # Global Command & Trap Router
     app.add_handler(MessageHandler(filters.ALL, global_message_router))
 
     print("Krishslayin ✝️ Core Fully Online.")
