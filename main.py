@@ -11,6 +11,7 @@ from telegram.ext import (
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
+# Global Configuration & Security Protocol
 OWNER_ID = int(os.environ.get("OWNER_ID", "123456789"))
 AUTHORIZED_ADMINS = set([OWNER_ID])
 GBANNED_USERS = set()
@@ -40,6 +41,8 @@ def get_chat_data(chat_id):
 
 def is_admin(user_id):
     return user_id in AUTHORIZED_ADMINS or user_id == OWNER_ID
+
+# --- Dynamic UI Navigation ---
 
 def get_menu_keyboard(page: int):
     if page == 1:
@@ -105,6 +108,8 @@ def get_menu_text(page: int):
             f"⚡ **Active Admins:**\n{admin_list}"
         )
 
+# --- Callbacks ---
+
 async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -120,7 +125,7 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         return await query.edit_message_text("🎛️ **CONTROL PANEL:** Active.", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
     elif data == "stop_all":
         chat_data = get_chat_data(query.message.chat_id)
-        for task in chat_data["tasks"].values(): 
+        for task in list(chat_data["tasks"].values()): 
             task.cancel()
         chat_data["tasks"].clear()
         chat_data["togglereact"] = False
@@ -128,6 +133,8 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     elif data.startswith("menu_"):
         page = int(data.split("_")[1])
         await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page), parse_mode="Markdown")
+
+# --- Commands ---
 
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -140,10 +147,12 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
         titles = [f"⚡ {name} ⚡", f"🔥 {name} 🔥", f"👑 {name} 👑"]
         idx = 0
         while True:
-            try: await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
-            except Exception: pass
+            try: 
+                await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
+            except Exception as e:
+                logging.error(f"GCNC error: {e}")
             idx += 1
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(1.0) # Rate-limit safe delay
             
     task = asyncio.create_task(gcnc_loop())
     chat_data["tasks"]["gcnc"] = task
@@ -155,6 +164,8 @@ async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_data["tasks"]["gcnc"].cancel()
         del chat_data["tasks"]["gcnc"]
         await update.message.reply_text("🛑 Title loop disarmed.")
+    else:
+        await update.message.reply_text("⚠️ No title loop active.")
 
 async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -167,7 +178,10 @@ async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
         messages = [f"⚔️ Slayed by Krishslayin {user}", f"🔥 Fear the Core {user}", f"💀 Neutralized {user}"]
         idx = 0
         while True:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=messages[idx % len(messages)])
+            try:
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=messages[idx % len(messages)])
+            except Exception as e:
+                logging.error(f"Target error: {e}")
             idx += 1
             await asyncio.sleep(1.5)
             
@@ -181,6 +195,8 @@ async def cmd_stoptarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_data["tasks"]["target"].cancel()
         del chat_data["tasks"]["target"]
         await update.message.reply_text("🛑 Targeting disarmed.")
+    else:
+        await update.message.reply_text("⚠️ No target active.")
 
 async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -192,8 +208,8 @@ async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def spam_loop():
         while True:
             try: await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-            except Exception: pass
-            await asyncio.sleep(0.4)
+            except Exception as e: logging.error(f"Spam error: {e}")
+            await asyncio.sleep(0.8)
             
     task = asyncio.create_task(spam_loop())
     chat_data["tasks"]["spam"] = task
@@ -205,6 +221,8 @@ async def cmd_stopspam(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_data["tasks"]["spam"].cancel()
         del chat_data["tasks"]["spam"]
         await update.message.reply_text("🛑 Spam stopped.")
+    else:
+        await update.message.reply_text("⚠️ No spam active.")
 
 async def cmd_togglereact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -241,6 +259,8 @@ async def cmd_roasthi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     roast_text = random.choice(ROASTS_HI)
     await update.message.reply_text(f"🔥 {target_name} {roast_text}" if target_name else f"🔥 {roast_text}")
 
+# --- Router ---
+
 async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.from_user: return
     user_id = update.message.from_user.id
@@ -248,30 +268,46 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     chat_data = get_chat_data(chat_id)
     text = update.message.text.strip() if update.message.text else ""
 
+    # Auto reaction for non-commands
     if not update.message.from_user.is_bot and not text.startswith("+"):
         if chat_data.get("togglereact", False) and is_admin(user_id):
             try:
+                # Correct syntax for sending reaction string directly
                 await context.bot.set_message_reaction(
                     chat_id=chat_id,
                     message_id=update.message.message_id,
-                    reaction="🤣"
+                    reaction=["🤣"]
                 )
             except Exception as e:
                 logging.error(f"Error setting reaction: {e}")
 
+    # Commands parser
     if text.startswith("+"):
-        cmd = text.split()[0][1:].lower()
+        cmd_parts = text.split()
+        cmd = cmd_parts[0][1:].lower()
+        
         routes = {
             "start": lambda u, c: u.message.reply_text(get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
             "menu": lambda u, c: u.message.reply_text(get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
-            "gcnc": cmd_gcnc, "stopgcnc": cmd_stopgcnc,
-            "target": cmd_target, "stoptarget": cmd_stoptarget,
-            "spam": cmd_spam, "stopspam": cmd_stopspam,
-            "togglereact": cmd_togglereact, "stopall": cmd_stopall,
-            "ping": cmd_ping, "getid": cmd_getid, "roasthi": cmd_roasthi
+            "gcnc": cmd_gcnc, 
+            "stopgcnc": cmd_stopgcnc,
+            "target": cmd_target, 
+            "stoptarget": cmd_stoptarget,
+            "spam": cmd_spam, 
+            "stopspam": cmd_stopspam,
+            "togglereact": cmd_togglereact, 
+            "stopall": cmd_stopall,
+            "ping": cmd_ping, 
+            "getid": cmd_getid, 
+            "roasthi": cmd_roasthi
         }
+        
         if cmd in routes:
-            await routes[cmd](update, context)
+            handler = routes[cmd]
+            if asyncio.iscoroutinefunction(handler):
+                await handler(update, context)
+            else:
+                await handler(update, context)
 
 def main():
     TOKEN = os.environ.get("BOT_TOKEN")
