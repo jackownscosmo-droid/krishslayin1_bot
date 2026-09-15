@@ -19,17 +19,23 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 # Global Configuration
 OWNER_ID = int(os.environ.get("OWNER_ID", "123456789"))
-MAIN_BOT_USERNAME = os.environ.get("MAIN_BOT_USERNAME", "").lower().replace("@", "")
+MAIN_BOT_USERNAME = os.environ.get("MAIN_BOT_USERNAME", "krishslayin1_bot").lower().replace("@", "")
 LOG_CHANNEL_ID = os.environ.get("LOG_CHANNEL_ID", None)
 
 AUTHORIZED_ADMINS = set([8821066459, OWNER_ID])
 GBANNED_USERS = set()
 CHAT_TASKS = {}
 
+# Global Reaction State across all bot instances
+GLOBAL_CHAT_REACT_MODE = {}
+
 REACTION_EMOJI = "🤣"
 
-# Commands exclusive to Main Bot UI/Admin Management
-MAIN_BOT_ONLY_COMMANDS = {"menu", "start", "gban", "ungban", "mute", "unmute", "slayinpowergifted", "slayinpowertaken"}
+# Commands exclusive to Main Bot UI/Admin Management ONLY
+MAIN_BOT_ONLY_COMMANDS = {
+    "menu", "start", "panel", "mute", "unmute", "mutelist", 
+    "gban", "ungban", "slayinpowergifted", "slayinpowertaken"
+}
 
 AUTOREPLY_LINES = [
     r"""बड़े दुःख के साथ हँसना पढ़ रहा है😂  𝐓ᴜ तेरी माँ रंडी 🤍😅🔥""",
@@ -70,8 +76,7 @@ def get_chat_data(chat_id):
             "stripmedia": set(),
             "pfpstripper": False,
             "autoreply": {},
-            "reptts": set(),
-            "react_mode": None
+            "reptts": set()
         }
     return CHAT_TASKS[chat_id]
 
@@ -186,27 +191,25 @@ def get_menu_text(page: int):
             f"⚡ Active Admins:\n{admin_list}"
         )
 
-# --- Emergency Universal Reset ---
+# --- Universal Reset ---
 
 async def hard_stop_all(chat_id: int, context: ContextTypes.DEFAULT_TYPE, user_id: int):
     chat_data = get_chat_data(chat_id)
     
-    # 1. Stop all Async Tasks
     for task_name, task in list(chat_data["tasks"].items()):
         task.cancel()
     chat_data["tasks"].clear()
 
-    # 2. Reset all Passive Traps & Modes
     chat_data["muted"].clear()
     chat_data["stripmedia"].clear()
     chat_data["autoreply"].clear()
     chat_data["reptts"].clear()
     chat_data["pfpstripper"] = False
-    chat_data["react_mode"] = None
+    GLOBAL_CHAT_REACT_MODE[chat_id] = None
 
     await send_log(context, f"🚨 *ABSOLUTE KILL SWITCH TRIGGERED*\nChat: `{chat_id}`\nAdmin/User: `{user_id}`")
 
-# --- Menu Callbacks ---
+# --- Callbacks ---
 
 async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -228,7 +231,7 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         page = int(data.split("_")[1])
         await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page), parse_mode="Markdown")
 
-# --- Commands Implementation ---
+# --- Commands ---
 
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -245,7 +248,7 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
                 idx += 1
             except Exception: pass
-            await asyncio.sleep(0.8) # Maximum safe limit for API limits
+            await asyncio.sleep(0.8)
     task = asyncio.create_task(gcnc_loop())
     chat_data["tasks"]["gcnc"] = task
     await context.bot.send_message(chat_id=update.effective_chat.id, text="⚔️ High-Speed Title loop activated.")
@@ -531,25 +534,31 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try: await status.delete()
     except Exception: pass
 
+# --- Universal Synchronized Reaction Handlers ---
+
 async def cmd_togglereactall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
-    chat_data = get_chat_data(update.effective_chat.id)
-    if chat_data["react_mode"] == "all":
-        chat_data["react_mode"] = None
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Auto-Reaction for ALL users Disabled.")
+    chat_id = update.effective_chat.id
+    current_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
+    
+    if current_mode == "all":
+        GLOBAL_CHAT_REACT_MODE[chat_id] = None
+        await context.bot.send_message(chat_id=chat_id, text="❌ Auto-Reaction for ALL users Disabled.")
     else:
-        chat_data["react_mode"] = "all"
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="✅ Auto-Reaction Enabled for ALL users!")
+        GLOBAL_CHAT_REACT_MODE[chat_id] = "all"
+        await context.bot.send_message(chat_id=chat_id, text="✅ Auto-Reaction Enabled for ALL users!")
 
 async def cmd_togglereact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
-    chat_data = get_chat_data(update.effective_chat.id)
-    if chat_data["react_mode"] == "admin":
-        chat_data["react_mode"] = None
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Admin Auto-Reaction Disabled.")
+    chat_id = update.effective_chat.id
+    current_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
+
+    if current_mode == "admin":
+        GLOBAL_CHAT_REACT_MODE[chat_id] = None
+        await context.bot.send_message(chat_id=chat_id, text="❌ Admin Auto-Reaction Disabled.")
     else:
-        chat_data["react_mode"] = "admin"
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="✅ Auto-Reaction Enabled for OWNER & ADMINS only!")
+        GLOBAL_CHAT_REACT_MODE[chat_id] = "admin"
+        await context.bot.send_message(chat_id=chat_id, text="✅ Auto-Reaction Enabled for OWNER & ADMINS only!")
 
 async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -688,7 +697,7 @@ async def cmd_ungban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"✅ Target {target_id} removed from blacklist.")
     await send_log(context, f"✅ *GLOBAL UNBAN APPLIED*\nTarget: `{target_id}`\nAdmin: `{update.effective_user.id}`")
 
-# --- Master Message Core Router ---
+# --- Global Engine Router ---
 
 async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.from_user: return
@@ -701,29 +710,29 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     bot_username = (await context.bot.get_me()).username.lower()
     is_main_bot = (MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME)
 
-    # Owner Command Auto Delete
+    # Auto Delete Owner's Trigger Message
     if user_id == OWNER_ID and text.startswith("+"):
         try: await update.message.delete()
         except Exception: pass
 
-    # PFP Stripper check
+    # Photo Stripper Trap
     if chat_data.get("pfpstripper") and update.message.new_chat_photo:
         try: 
             await context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
             return
         except Exception: pass
 
-    # Global Ban & Auto Mute Traps
+    # Muted & Blacklisted Enforcement
     if user_id in GBANNED_USERS or user_id in chat_data["muted"]:
         try: return await update.message.delete()
         except Exception: pass
 
-    # Media Stripper Trap
+    # Media Stripper Enforcement
     if user_id in chat_data["stripmedia"] and (update.message.photo or update.message.video or update.message.document):
         try: return await update.message.delete()
         except Exception: pass
 
-    # Auto Reply Trap
+    # Auto-Reply Trap
     autoreply_map = chat_data.get("autoreply", {})
     if user_id in autoreply_map or username in autoreply_map:
         target_key = user_id if user_id in autoreply_map else username
@@ -737,7 +746,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             )
         except Exception: pass
 
-    # Repeat Voice Trap (reptts)
+    # Audio Repeat Trap (reptts)
     if user_id in chat_data["reptts"] and text and gTTS is not None:
         try:
             tts = gTTS(text=text, lang="hi")
@@ -745,8 +754,8 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             await context.bot.send_voice(chat_id=chat_id, voice=open("reptts.mp3", "rb"))
         except Exception: pass
 
-    # Reaction Logic
-    react_mode = chat_data.get("react_mode")
+    # Synchronized Reaction Reaction Logic across all cluster bots
+    react_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
     if react_mode is not None and not text.startswith("+"):
         should_react = False
         if react_mode == "all":
@@ -764,11 +773,11 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
                 )
             except Exception: pass
 
-    # Commands Router Execution across Cluster
+    # Command Execution Engine
     if text.startswith("+"):
         cmd = text.split()[0][1:].lower()
 
-        # Restrict exclusive UI commands to Main Bot only
+        # Ignore command if it's restricted ONLY to Main Bot
         if cmd in MAIN_BOT_ONLY_COMMANDS and not is_main_bot:
             return
 
