@@ -5,7 +5,7 @@ import asyncio
 import logging
 
 try:
-    from gtts import gTTS
+    from gTTS import gTTS
 except ImportError:
     gTTS = None
 
@@ -26,12 +26,12 @@ AUTHORIZED_ADMINS = set([8821066459, OWNER_ID])
 GBANNED_USERS = set()
 CHAT_TASKS = {}
 
-# Global Reaction State across all bot instances
+# Global Reaction State across all bot instances for synchronized reactions
 GLOBAL_CHAT_REACT_MODE = {}
 
 REACTION_EMOJI = "🤣"
 
-# Commands exclusive to Main Bot UI/Admin Management ONLY
+# Commands exclusive ONLY to Main Bot (@krishslayin1_bot)
 MAIN_BOT_ONLY_COMMANDS = {
     "menu", "start", "panel", "mute", "unmute", "mutelist", 
     "gban", "ungban", "slayinpowergifted", "slayinpowertaken"
@@ -39,7 +39,7 @@ MAIN_BOT_ONLY_COMMANDS = {
 
 AUTOREPLY_LINES = [
     r"""बड़े दुःख के साथ हँसना पढ़ रहा है😂  𝐓ᴜ तेरी माँ रंडी 🤍😅🔥""",
-    r"""𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙗𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯 😂👯😂👯😂👯 😂👯😂👯😂👯""",
+    r"""𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯 😂👯😂👯😂👯 😂👯😂👯😂👯""",
     r"""𝙏𝙀𝙍𝙄 𝙈𝘼 𝑑𝙄𝘿🇭🇻𝘼 𝙋𝙀𝙉𝙎𝙄𝙊𝙉 𝙆𝙃𝘼𝙉𝙀 𝙒𝘼𝙇𝙄 𝙍𝙉𝘿𝙄 🤣""",
     r"""तेरी maa की chut में ऐसा HACK lgaunga Light की speed में बच्चे देगी""",
     r"""𝑩𝑯𝑨𝑮 𝑹𝑨𝑵𝑫𝒀𝑲𝑬 𝑻𝑬𝑹𝑰 𝑴𝑨 𝑪𝑯𝑼𝑫𝑹𝑰 𝑯𝑨𝑰 ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️""",
@@ -754,7 +754,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             await context.bot.send_voice(chat_id=chat_id, voice=open("reptts.mp3", "rb"))
         except Exception: pass
 
-    # Synchronized Reaction Reaction Logic across all cluster bots
+    # Synchronized Reaction Logic across all cluster bots
     react_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
     if react_mode is not None and not text.startswith("+"):
         should_react = False
@@ -777,7 +777,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     if text.startswith("+"):
         cmd = text.split()[0][1:].lower()
 
-        # Ignore command if it's restricted ONLY to Main Bot
+        # Ignore command if restricted ONLY to Main Bot and current instance is a Clone
         if cmd in MAIN_BOT_ONLY_COMMANDS and not is_main_bot:
             return
 
