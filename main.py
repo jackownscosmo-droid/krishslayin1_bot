@@ -123,7 +123,8 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
 
 async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
-    text = " ".join(context.args)
+    args = update.message.text.split()[1:]
+    text = " ".join(args)
     if not text: return await update.message.reply_text("Usage: +spam <text>")
     
     chat_data = get_chat_data(update.effective_chat.id)
@@ -145,7 +146,8 @@ async def cmd_stopspam(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
-    name = " ".join(context.args)
+    args = update.message.text.split()[1:]
+    name = " ".join(args)
     if not name: return await update.message.reply_text("Usage: +gcnc <name>")
     
     chat_data = get_chat_data(update.effective_chat.id)
@@ -227,7 +229,8 @@ async def cmd_getid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"🆔 User ID: `{user.id}`\n💬 Chat ID: `{update.effective_chat.id}`", parse_mode="Markdown")
 
 async def cmd_tts(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = " ".join(context.args)
+    args = update.message.text.split()[1:]
+    text = " ".join(args)
     if not text: return await update.message.reply_text("Usage: +tts <text>")
     
     tts = gTTS(text=text, lang='hi')
@@ -289,40 +292,42 @@ def main():
 
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # Fixed syntax: prefixes parameter pass format as list
-    P = ['+']
+    # Helper function to generate '+' prefix handlers
+    def add_p_cmd(name, handler_func):
+        regex_pattern = r"^\+" + name + r"(\s+.*)?$"
+        app.add_handler(MessageHandler(filters.Regex(regex_pattern), handler_func))
 
     # Core Navigation Handlers (+start, +help, +menu)
-    app.add_handler(CommandHandler("start", cmd_start_help_menu, prefixes=P))
-    app.add_handler(CommandHandler("help", cmd_start_help_menu, prefixes=P))
-    app.add_handler(CommandHandler("menu", cmd_start_help_menu, prefixes=P))
+    add_p_cmd("start", cmd_start_help_menu)
+    add_p_cmd("help", cmd_start_help_menu)
+    add_p_cmd("menu", cmd_start_help_menu)
     app.add_handler(CallbackQueryHandler(menu_callback_handler, pattern="^menu_"))
 
     # Combat Commands (+spam, +stopspam, +gcnc, +stopgcnc)
-    app.add_handler(CommandHandler("spam", cmd_spam, prefixes=P))
-    app.add_handler(CommandHandler("stopspam", cmd_stopspam, prefixes=P))
-    app.add_handler(CommandHandler("gcnc", cmd_gcnc, prefixes=P))
-    app.add_handler(CommandHandler("stopgcnc", cmd_stopgcnc, prefixes=P))
+    add_p_cmd("spam", cmd_spam)
+    add_p_cmd("stopspam", cmd_stopspam)
+    add_p_cmd("gcnc", cmd_gcnc)
+    add_p_cmd("stopgcnc", cmd_stopgcnc)
 
     # Moderation & Panel (+panel, +mute, +unmute, +stopall)
-    app.add_handler(CommandHandler("panel", cmd_panel, prefixes=P))
-    app.add_handler(CommandHandler("mute", cmd_mute, prefixes=P))
-    app.add_handler(CommandHandler("unmute", cmd_unmute, prefixes=P))
-    app.add_handler(CommandHandler("stopall", cmd_stopall, prefixes=P))
+    add_p_cmd("panel", cmd_panel)
+    add_p_cmd("mute", cmd_mute)
+    add_p_cmd("unmute", cmd_unmute)
+    add_p_cmd("stopall", cmd_stopall)
     app.add_handler(CallbackQueryHandler(panel_callback, pattern="^(stop_all|status_check)$"))
 
     # Utilities (+ping, +getid, +tts)
-    app.add_handler(CommandHandler("ping", cmd_ping, prefixes=P))
-    app.add_handler(CommandHandler("getid", cmd_getid, prefixes=P))
-    app.add_handler(CommandHandler("tts", cmd_tts, prefixes=P))
+    add_p_cmd("ping", cmd_ping)
+    add_p_cmd("getid", cmd_getid)
+    add_p_cmd("tts", cmd_tts)
 
     # Owner Controls & Admin Management (+addadmin, +removeadmin, +cluster, +gban)
-    app.add_handler(CommandHandler("addadmin", cmd_addadmin, prefixes=P))
-    app.add_handler(CommandHandler("removeadmin", cmd_removeadmin, prefixes=P))
-    app.add_handler(CommandHandler("cluster", cmd_cluster, prefixes=P))
-    app.add_handler(CommandHandler("gban", cmd_gban, prefixes=P))
+    add_p_cmd("addadmin", cmd_addadmin)
+    add_p_cmd("removeadmin", cmd_removeadmin)
+    add_p_cmd("cluster", cmd_cluster)
+    add_p_cmd("gban", cmd_gban)
 
-    # Message Enforcer
+    # Message Enforcer for Mutes & Autoreplies
     app.add_handler(MessageHandler(filters.ALL, auto_enforcer))
 
     print("Bot fully active and operational with '+' prefix.")
