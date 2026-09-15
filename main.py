@@ -4,7 +4,7 @@ import random
 import asyncio
 import logging
 from gtts import gTTS
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReactionTypeEmoji
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, MessageHandler, 
     CallbackQueryHandler, filters, ContextTypes
@@ -658,7 +658,7 @@ async def cmd_ungban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     GBANNED_USERS.discard(target_id)
     await update.message.reply_text(f"✅ Target `{target_id}` removed from blacklist.", parse_mode="Markdown")
 
-# --- Fixed Global Router & Reaction System ---
+# --- Global Message & Reaction Router ---
 
 async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.from_user: return
@@ -668,28 +668,32 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
 
     # 1. Traps Execution (Mute / Strip media)
     if user_id in GBANNED_USERS or user_id in chat_data["muted"]:
-        try: return await update.message.delete()
+        try: 
+            await update.message.delete()
+            return
         except Exception: pass
 
     if user_id in chat_data["stripmedia"] and (update.message.photo or update.message.video or update.message.document):
-        try: return await update.message.delete()
+        try: 
+            await update.message.delete()
+            return
         except Exception: pass
 
     if user_id in chat_data["autoreply"]:
         await update.message.reply_text(chat_data["autoreply"][user_id])
 
-    # 2. FIXED: Auto-Reaction system using official ReactionTypeEmoji class
+    # 2. Auto-Reaction System (Using dictionary payload to avoid import issues)
     if chat_data.get("togglereact", False):
         try:
             await context.bot.set_message_reaction(
                 chat_id=chat_id,
                 message_id=update.message.message_id,
-                reaction=[ReactionTypeEmoji(emoji="🤣")]
+                reaction=[{"type": "emoji", "emoji": "🤣"}]
             )
         except Exception as e:
             logging.error(f"Reaction execution error: {e}")
 
-    # 3. FIXED: Command Router Non-blocking Execution
+    # 3. Command Execution Router
     text = update.message.text.strip() if update.message.text else ""
     if text.startswith("+"):
         cmd = text.split()[0][1:].lower()
