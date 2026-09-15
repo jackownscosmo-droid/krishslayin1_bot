@@ -1,3 +1,1 @@
-python-telegram-bot==20.7
-gTTS==2.5.1
-pydub==0.25.1
+python-telegram-bot>=21.0
