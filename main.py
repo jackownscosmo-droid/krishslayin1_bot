@@ -12,12 +12,11 @@ from telegram.ext import (
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 # Global Storage States
-OWNER_ID = int(os.environ.get("OWNER_ID", "123456789")) # Set your Telegram ID in env
+OWNER_ID = int(os.environ.get("OWNER_ID", "123456789"))
 AUTHORIZED_ADMINS = set([OWNER_ID])
 GBANNED_USERS = set()
 
 # Chat Specific Active Tasks
-# Format: {chat_id: {"spam": Task, "target": Task, "muted": set(), "stripmedia": set(), "autoreply": {user_id: text}}}
 CHAT_TASKS = {}
 
 def get_chat_data(chat_id):
@@ -36,12 +35,96 @@ def get_chat_data(chat_id):
 def is_admin(user_id):
     return user_id in AUTHORIZED_ADMINS or user_id == OWNER_ID
 
+# --- DYNAMIC 4-PAGE MENU SYSTEM ---
+
+def get_menu_keyboard(page: int):
+    buttons = []
+    if page == 1:
+        buttons = [
+            [InlineKeyboardButton("➡️ Page 2 (Combat)", callback_data="menu_2")],
+            [InlineKeyboardButton("Close Menu ❌", callback_data="menu_close")]
+        ]
+    elif page == 2:
+        buttons = [
+            [InlineKeyboardButton("⬅️ Page 1", callback_data="menu_1"), InlineKeyboardButton("Page 3 ➡️", callback_data="menu_3")],
+            [InlineKeyboardButton("Close Menu ❌", callback_data="menu_close")]
+        ]
+    elif page == 3:
+        buttons = [
+            [InlineKeyboardButton("⬅️ Page 2", callback_data="menu_2"), InlineKeyboardButton("Page 4 ➡️", callback_data="menu_4")],
+            [InlineKeyboardButton("Close Menu ❌", callback_data="menu_close")]
+        ]
+    elif page == 4:
+        buttons = [
+            [InlineKeyboardButton("⬅️ Page 3 (Mod)", callback_data="menu_3")],
+            [InlineKeyboardButton("Close Menu ❌", callback_data="menu_close")]
+        ]
+    return InlineKeyboardMarkup(buttons)
+
+def get_menu_text(page: int):
+    if page == 1:
+        return (
+            "📖 **HELP MENU - PAGE 1/4 (General & Info)**\n\n"
+            "• `+start` - Check if bot is alive\n"
+            "• `+help` - Open this main help menu\n"
+            "• `+menu` - Open interactive menu\n"
+            "• `+ping` - Check cluster network latency\n"
+            "• `+getid` - Get current user & chat ID\n"
+            "• `+tts <text>` - Convert text to Hindi voice note"
+        )
+    elif page == 2:
+        return (
+            "⚔️ **HELP MENU - PAGE 2/4 (Combat & Automation)**\n\n"
+            "• `+spam <text>` - Start continuous message spam\n"
+            "• `+stopspam` - Cancel active spam process\n"
+            "• `+gcnc <name>` - Start auto title-looping trap\n"
+            "• `+stopgcnc` - Stop title-looping process"
+        )
+    elif page == 3:
+        return (
+            "🛡️ **HELP MENU - PAGE 3/4 (Moderation & Control)**\n\n"
+            "• `+mute` - Reply to shadow-mute user in chat\n"
+            "• `+unmute` - Reply to restore user speaking rights\n"
+            "• `+panel` - Open control panel for current chat\n"
+            "• `+stopall` - Emergency kill-switch for all tasks"
+        )
+    elif page == 4:
+        admin_list = "\n".join([f"• `{uid}`" for uid in AUTHORIZED_ADMINS])
+        return (
+            "👑 **HELP MENU - PAGE 4/4 (Owner & Power Roster)**\n\n"
+            "**Owner Commands:**\n"
+            "• `+addadmin` - Reply to grant bot admin power\n"
+            "• `+removeadmin` - Reply to revoke bot admin power\n"
+            "• `+cluster` - View full server/node telemetry\n"
+            "• `+gban` - Reply to globally blacklist user\n\n"
+            f"⚡ **Authorized Admins List:**\n{admin_list}"
+        )
+
+async def cmd_start_help_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = get_menu_text(1)
+    markup = get_menu_keyboard(1)
+    await update.message.reply_text(text, reply_markup=markup, parse_mode="Markdown")
+
+async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    
+    data = query.data
+    if data == "menu_close":
+        return await query.message.delete()
+    
+    if data.startswith("menu_"):
+        page = int(data.split("_")[1])
+        text = get_menu_text(page)
+        markup = get_menu_keyboard(page)
+        await query.edit_message_text(text, reply_markup=markup, parse_mode="Markdown")
+
 # --- COMBAT & AUTOMATION MODULE ---
 
 async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     text = " ".join(context.args)
-    if not text: return await update.message.reply_text("Usage: /spam <text>")
+    if not text: return await update.message.reply_text("Usage: +spam <text>")
     
     chat_data = get_chat_data(update.effective_chat.id)
     async def spam_loop():
@@ -63,7 +146,7 @@ async def cmd_stopspam(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     name = " ".join(context.args)
-    if not name: return await update.message.reply_text("Usage: /gcnc <name>")
+    if not name: return await update.message.reply_text("Usage: +gcnc <name>")
     
     chat_data = get_chat_data(update.effective_chat.id)
     async def gcnc_loop():
@@ -87,7 +170,7 @@ async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del chat_data["tasks"]["gcnc"]
         await update.message.reply_text("🛑 Title loop stopped.")
 
-# --- MODERATION & TRAPS MODULE ---
+# --- MODERATION & CONTROL MODULE ---
 
 async def cmd_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
@@ -145,14 +228,29 @@ async def cmd_getid(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_tts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = " ".join(context.args)
-    if not text: return await update.message.reply_text("Usage: /tts <text>")
+    if not text: return await update.message.reply_text("Usage: +tts <text>")
     
     tts = gTTS(text=text, lang='hi')
     tts.save("tts.mp3")
     await update.message.reply_audio(audio=open("tts.mp3", "rb"))
     os.remove("tts.mp3")
 
-# --- OWNER TELEMETRY & CONTROLS ---
+# --- OWNER CONTROLS & POWER ROSTER ---
+
+async def cmd_addadmin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID: return
+    if not update.message.reply_to_message: return await update.message.reply_text("Reply to target user to grant powers.")
+    target_id = update.message.reply_to_message.from_user.id
+    AUTHORIZED_ADMINS.add(target_id)
+    await update.message.reply_text(f"👑 User `{target_id}` added to Authorized Admins!", parse_mode="Markdown")
+
+async def cmd_removeadmin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID: return
+    if not update.message.reply_to_message: return await update.message.reply_text("Reply to target user to revoke powers.")
+    target_id = update.message.reply_to_message.from_user.id
+    if target_id == OWNER_ID: return await update.message.reply_text("Cannot remove Owner.")
+    AUTHORIZED_ADMINS.discard(target_id)
+    await update.message.reply_text(f"🗑️ Powers revoked for User `{target_id}`.", parse_mode="Markdown")
 
 async def cmd_cluster(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
@@ -165,7 +263,7 @@ async def cmd_gban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     GBANNED_USERS.add(target_id)
     await update.message.reply_text(f"🚫 User {target_id} Globally Blacklisted.")
 
-# --- AUTOMATIC ENFORCER (Message Handler) ---
+# --- AUTOMATIC ENFORCER ---
 
 async def auto_enforcer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.from_user: return
@@ -174,19 +272,11 @@ async def auto_enforcer(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     chat_data = get_chat_data(chat_id)
 
-    # Global Ban Enforcer
-    if user_id in GBANNED_USERS:
+    if user_id in GBANNED_USERS or user_id in chat_data["muted"]:
         try: await update.message.delete()
         except: pass
         return
 
-    # Shadow-Mute Enforcer
-    if user_id in chat_data["muted"]:
-        try: await update.message.delete()
-        except: pass
-        return
-
-    # Auto-Reply Enforcer
     if user_id in chat_data["autoreply"]:
         reply_msg = chat_data["autoreply"][user_id]
         await update.message.reply_text(reply_msg)
@@ -199,32 +289,42 @@ def main():
 
     app = ApplicationBuilder().token(TOKEN).build()
 
-    # Combat Commands
-    app.add_handler(CommandHandler("spam", cmd_spam))
-    app.add_handler(CommandHandler("stopspam", cmd_stopspam))
-    app.add_handler(CommandHandler("gcnc", cmd_gcnc))
-    app.add_handler(CommandHandler("stopgcnc", cmd_stopgcnc))
+    PREFIX = "+"
 
-    # Moderation
-    app.add_handler(CommandHandler("panel", cmd_panel))
-    app.add_handler(CommandHandler("mute", cmd_mute))
-    app.add_handler(CommandHandler("unmute", cmd_unmute))
-    app.add_handler(CommandHandler("stopall", cmd_stopall))
-    app.add_handler(CallbackQueryHandler(panel_callback))
+    # Core Navigation Handlers (+start, +help, +menu)
+    app.add_handler(CommandHandler("start", cmd_start_help_menu, prefix=PREFIX))
+    app.add_handler(CommandHandler("help", cmd_start_help_menu, prefix=PREFIX))
+    app.add_handler(CommandHandler("menu", cmd_start_help_menu, prefix=PREFIX))
+    app.add_handler(CallbackQueryHandler(menu_callback_handler, pattern="^menu_"))
 
-    # Utilities
-    app.add_handler(CommandHandler("ping", cmd_ping))
-    app.add_handler(CommandHandler("getid", cmd_getid))
-    app.add_handler(CommandHandler("tts", cmd_tts))
+    # Combat Commands (+spam, +stopspam, +gcnc, +stopgcnc)
+    app.add_handler(CommandHandler("spam", cmd_spam, prefix=PREFIX))
+    app.add_handler(CommandHandler("stopspam", cmd_stopspam, prefix=PREFIX))
+    app.add_handler(CommandHandler("gcnc", cmd_gcnc, prefix=PREFIX))
+    app.add_handler(CommandHandler("stopgcnc", cmd_stopgcnc, prefix=PREFIX))
 
-    # Owner Controls
-    app.add_handler(CommandHandler("cluster", cmd_cluster))
-    app.add_handler(CommandHandler("gban", cmd_gban))
+    # Moderation & Panel (+panel, +mute, +unmute, +stopall)
+    app.add_handler(CommandHandler("panel", cmd_panel, prefix=PREFIX))
+    app.add_handler(CommandHandler("mute", cmd_mute, prefix=PREFIX))
+    app.add_handler(CommandHandler("unmute", cmd_unmute, prefix=PREFIX))
+    app.add_handler(CommandHandler("stopall", cmd_stopall, prefix=PREFIX))
+    app.add_handler(CallbackQueryHandler(panel_callback, pattern="^(stop_all|status_check)$"))
 
-    # Enforcer Handler
+    # Utilities (+ping, +getid, +tts)
+    app.add_handler(CommandHandler("ping", cmd_ping, prefix=PREFIX))
+    app.add_handler(CommandHandler("getid", cmd_getid, prefix=PREFIX))
+    app.add_handler(CommandHandler("tts", cmd_tts, prefix=PREFIX))
+
+    # Owner Controls & Admin Management (+addadmin, +removeadmin, +cluster, +gban)
+    app.add_handler(CommandHandler("addadmin", cmd_addadmin, prefix=PREFIX))
+    app.add_handler(CommandHandler("removeadmin", cmd_removeadmin, prefix=PREFIX))
+    app.add_handler(CommandHandler("cluster", cmd_cluster, prefix=PREFIX))
+    app.add_handler(CommandHandler("gban", cmd_gban, prefix=PREFIX))
+
+    # Message Enforcer
     app.add_handler(MessageHandler(filters.ALL, auto_enforcer))
 
-    print("Bot fully active and operational.")
+    print("Bot fully active and operational with '+' prefix.")
     app.run_polling()
 
 if __name__ == '__main__':
