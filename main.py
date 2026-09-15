@@ -289,37 +289,38 @@ def main():
 
     app = ApplicationBuilder().token(TOKEN).build()
 
-    PREFIX = "+"
+    # Fixed syntax: prefixes parameter pass format as list
+    P = ['+']
 
     # Core Navigation Handlers (+start, +help, +menu)
-    app.add_handler(CommandHandler("start", cmd_start_help_menu, prefix=PREFIX))
-    app.add_handler(CommandHandler("help", cmd_start_help_menu, prefix=PREFIX))
-    app.add_handler(CommandHandler("menu", cmd_start_help_menu, prefix=PREFIX))
+    app.add_handler(CommandHandler("start", cmd_start_help_menu, prefixes=P))
+    app.add_handler(CommandHandler("help", cmd_start_help_menu, prefixes=P))
+    app.add_handler(CommandHandler("menu", cmd_start_help_menu, prefixes=P))
     app.add_handler(CallbackQueryHandler(menu_callback_handler, pattern="^menu_"))
 
     # Combat Commands (+spam, +stopspam, +gcnc, +stopgcnc)
-    app.add_handler(CommandHandler("spam", cmd_spam, prefix=PREFIX))
-    app.add_handler(CommandHandler("stopspam", cmd_stopspam, prefix=PREFIX))
-    app.add_handler(CommandHandler("gcnc", cmd_gcnc, prefix=PREFIX))
-    app.add_handler(CommandHandler("stopgcnc", cmd_stopgcnc, prefix=PREFIX))
+    app.add_handler(CommandHandler("spam", cmd_spam, prefixes=P))
+    app.add_handler(CommandHandler("stopspam", cmd_stopspam, prefixes=P))
+    app.add_handler(CommandHandler("gcnc", cmd_gcnc, prefixes=P))
+    app.add_handler(CommandHandler("stopgcnc", cmd_stopgcnc, prefixes=P))
 
     # Moderation & Panel (+panel, +mute, +unmute, +stopall)
-    app.add_handler(CommandHandler("panel", cmd_panel, prefix=PREFIX))
-    app.add_handler(CommandHandler("mute", cmd_mute, prefix=PREFIX))
-    app.add_handler(CommandHandler("unmute", cmd_unmute, prefix=PREFIX))
-    app.add_handler(CommandHandler("stopall", cmd_stopall, prefix=PREFIX))
+    app.add_handler(CommandHandler("panel", cmd_panel, prefixes=P))
+    app.add_handler(CommandHandler("mute", cmd_mute, prefixes=P))
+    app.add_handler(CommandHandler("unmute", cmd_unmute, prefixes=P))
+    app.add_handler(CommandHandler("stopall", cmd_stopall, prefixes=P))
     app.add_handler(CallbackQueryHandler(panel_callback, pattern="^(stop_all|status_check)$"))
 
     # Utilities (+ping, +getid, +tts)
-    app.add_handler(CommandHandler("ping", cmd_ping, prefix=PREFIX))
-    app.add_handler(CommandHandler("getid", cmd_getid, prefix=PREFIX))
-    app.add_handler(CommandHandler("tts", cmd_tts, prefix=PREFIX))
+    app.add_handler(CommandHandler("ping", cmd_ping, prefixes=P))
+    app.add_handler(CommandHandler("getid", cmd_getid, prefixes=P))
+    app.add_handler(CommandHandler("tts", cmd_tts, prefixes=P))
 
     # Owner Controls & Admin Management (+addadmin, +removeadmin, +cluster, +gban)
-    app.add_handler(CommandHandler("addadmin", cmd_addadmin, prefix=PREFIX))
-    app.add_handler(CommandHandler("removeadmin", cmd_removeadmin, prefix=PREFIX))
-    app.add_handler(CommandHandler("cluster", cmd_cluster, prefix=PREFIX))
-    app.add_handler(CommandHandler("gban", cmd_gban, prefix=PREFIX))
+    app.add_handler(CommandHandler("addadmin", cmd_addadmin, prefixes=P))
+    app.add_handler(CommandHandler("removeadmin", cmd_removeadmin, prefixes=P))
+    app.add_handler(CommandHandler("cluster", cmd_cluster, prefixes=P))
+    app.add_handler(CommandHandler("gban", cmd_gban, prefixes=P))
 
     # Message Enforcer
     app.add_handler(MessageHandler(filters.ALL, auto_enforcer))
