@@ -1,4 +1,4 @@
-Import os
+import os
 import time
 import random
 import asyncio
@@ -18,7 +18,37 @@ AUTHORIZED_ADMINS = set([OWNER_ID])
 GBANNED_USERS = set()
 CHAT_TASKS = {}
 
-# Dynamic High-Class Roast Database
+# Raw Text Line Arrays (No Prefix Line Numbers)
+AUTOREPLY_LINES = [
+    "बड़े दुःख के साथ हँसना पढ़ रहा है😂  𝐓ᴜ तेरी माँ रंडी 🤍😅🔥",
+    "𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙗𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯 😂👯😂👯😂👯 😂👯😂👯😂👯",
+    "𝙏𝙀𝙍𝙄 𝙈𝘼 𝑑𝙄𝘿𝙃𝙑𝘼 𝙋𝙀𝙉𝙎𝙄𝙊𝙉 𝙆𝙃𝘼𝙉𝙀 𝙒𝘼𝙇𝙄 𝙍𝙉𝘿𝙄 🤣",
+    "तेरी maa की chut में ऐसा HACK lgaunga \nLight की speed में बच्चे देगी",
+    "𝑩𝑯𝑨𝑮 𝑹𝑨𝑵𝑫𝒀𝑲𝑬 𝑻𝑬𝑹𝑰 𝑴𝑨 𝑪𝑯𝑼𝑫𝑹𝑰 𝑯𝑨𝑰 ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️",
+    "𝘽𝙃𝘼𝙂𝘼 𝘽𝙃𝘼𝙂𝘼 𝙆𝙀 𝙈𝘼𝙍𝙐𝙉𝙂𝘼 🤣🩷🙌🏾",
+    "𝐆ʀᴇᴇ𝐛𝐢 और दर्दनाक 𝐂ʜᴜᴅᴀ𝐢 \nतो तेरी मां ने देखी है 👀😝🤣"
+]
+
+TARGET_LINES = [
+    "˚∧＿∧   +        — ͟͞͞🥛\n(  •‿• )つ  — ͟͞͞ 🥛         — ͟͞͞🥛 +\n(つ  <                — ͟͞͞🥛\n｜_つ      +  — ͟͞͞🥛         — ͟͞͞🥛 ˚\n`し´Special attack: teri  mummy ka dudh 😂😂 kilas randi ke",
+    "𝙉𝙀𝙆𝘼𝘼𝘼𝙇 𝙈𝘼𝘿𝘼𝘼𝙍𝘾𝙃𝘿👍🏼👍🏼👍🏼👍🏼👍🏼",
+    "🚓🚜🚌🚙🚃\n     🚙🌍🌎🌏🌎🚕\n  🚍🌎🇺🇸🇩🇪🇪🇸🌍🚔\n🚘🌏🇷🇺🇬🇧🇮🇹🇪🇸🌏🚘\n🚔🌍🇰🇷🇯🇵🇺🇸🇬🇧🌍🚖\n  🚖🌎🇮🇹🇫🇷🇰🇷🌍🚘\n     🚍🌏🌍🌎🌏🚔\n          🚓🚑🚗🚕 \n\n𝐃𝐄𝐊𝐇 𝐓𝐄𝐑𝐈 𝐌𝐀 𝐊𝐎 𝐂𝐇𝐎𝐃𝐍𝐄 𝐏𝐔𝐑𝐀 𝐃𝐄𝐒𝐇 𝐀𝐘𝐀 𝐇",
+    "तेरी बहन का भोसड़ा 😂🤸🏻‍♂️😂🤸🏻‍♂️😂🤸🏻‍♂️😂𝘾𝙃𝙐𝙋 𝙍𝙉𝘿𝙄𝙆𝙀",
+    "ᴍᴀᴀғɪ ᴍᴀɴɢʟᴇ ᴋʏᴀ ᴘᴀᴛᴀ ʙᴀᴅʙᴏʏ ᴍᴀᴀғ ᴋʀᴅ ᴛᴜᴊᴇ"
+]
+
+FLOOD_LINES = [
+    "𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙗𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯 😂👯😂👯😂👯 😂👯😂👯😂👯",
+    "⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆",
+    "तेरो ma ko चोदने k बाद उसको ऐसे चंद सितारए नजर आएंगे",
+    "😝 Beta 🥶 लंड 🔥 पकड़ 😡 muh 😜 pe 😁 रगड़ 😂",
+    "तेरी माँ or मेरे हसीन पल यहाँ डाल दू?\n\n1. xvideos.com\n2. xhamster.com\n3. xnxx.com\n4. okporn.com\n5. xxx.videos.in\n😝👈🏻",
+    "𝐁ᴀᴀ𝐏 𝐊ᴏ 𝐑ᴇᴘʟ𝐘 𝐁ᴀᴅ𝐈 𝐓ᴇ𝐙 𝐃ᴇʀ𝐀 𝐇ᴀ𝐈 😁😁🌷",
+    "𝙀𝙆 𝘽𝘼𝙍 𝘿𝙄𝙈𝘼𝙂 𝙂𝙃𝘼𝙍𝘼𝙈 𝙃𝙊𝙂𝙀𝙔𝘼 𝙉𝘼 𝘽𝙀𝙏𝘼",
+    "𝗚𝗢𝗢𝗗 𝗠𝗢𝗥𝗡𝗜𝗡𝗚 𝗥𝗔𝗡𝗗𝗜 𝗝𝗜 𝗔𝗣𝗞𝗘 𝗖𝗛𝗨𝗗𝗡𝗘 𝗞𝗔 𝗧𝗘𝗠 𝗛𝗢𝗚𝗬𝗔 👍🏿👍🏿👍🏿👍🏿👍🏿👍🏿",
+    "🐿️🪈🐿️🪈🐿️🪈🐿️🪈🐿️🪈\nTri maa rndy  tri maa rndy \n🪈🐿️🪈🐿️🪈🐿️🪈🐿️🪈🐿️"
+]
+
 ROASTS_HI = [
     "Teri shakal dekh ke Telegram ka server bhi crash ho jaye!",
     "Itna dimaag agar sahi jagah lagaya hota toh aaj NASA me hota, yahan bakchodi nahi kar raha hota!",
@@ -81,8 +111,7 @@ def get_menu_keyboard(page: int):
             [
                 InlineKeyboardButton("COMBAT & WARFARE ⚔️", callback_data="menu_2"),
                 InlineKeyboardButton("⛓️ DARK TARGETING 🎯", callback_data="menu_3")
-
-],
+            ],
             [
                 InlineKeyboardButton("BLACKOUT CONTROL 🛡️", callback_data="menu_4"),
                 InlineKeyboardButton("OWNER CONTROL 🎛️", callback_data="menu_5")
@@ -160,8 +189,7 @@ def get_menu_text(page: int):
             "• +ttsedits — View supported TTS language codes\n"
             "• +roasthi <user> — Automated Hindi roast\n"
             "• +roasteng <user> — Automated English roast"
-
-)
+        )
     elif page == 5:
         admin_list = "\n".join([f"• {uid}" for uid in AUTHORIZED_ADMINS])
         return (
@@ -262,11 +290,9 @@ async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "target" in chat_data["tasks"]: chat_data["tasks"]["target"].cancel()
 
     async def target_loop():
-        messages = [f"⚔️ Slayed by Krishslayin {user}", f"🔥 Fear the Core {user}", f"💀 Neutralized {user}"]
-        idx = 0
         while True:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=messages[idx % len(messages)])
-            idx += 1
+            line = random.choice(TARGET_LINES)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{user}\n{line}")
             await asyncio.sleep(1.5)
     task = asyncio.create_task(target_loop())
     chat_data["tasks"]["target"] = task
@@ -324,13 +350,14 @@ async def cmd_flood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     if "flood" in chat_data["tasks"]: chat_data["tasks"]["flood"].cancel()
 
-async def flood_loop():
+    async def flood_loop():
         while True:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🌊 FLOODING {user} ⚡")
-            await asyncio.sleep(0.3)
+            for line in FLOOD_LINES:
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{user}\n{line}")
+                await asyncio.sleep(0.4)
     task = asyncio.create_task(flood_loop())
     chat_data["tasks"]["flood"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🌊 Flood active.")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🌊 Flood active on {user}.")
 
 async def cmd_vflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -454,19 +481,36 @@ async def cmd_autoreply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     reply = update.message.reply_to_message
     args = update.message.text.split()[1:]
-    target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
-    if not target_id: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target or pass User ID.")
+    
+    target_id = None
+    target_username = None
 
-get_chat_data(update.effective_chat.id)["autoreply"][target_id] = "⚡ Slayed by Krishslayin Core."
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🤖 Auto-reply trap active on {target_id}.", parse_mode="Markdown")
+    if reply and reply.from_user:
+        target_id = reply.from_user.id
+    elif args:
+        if args[0].isdigit():
+            target_id = int(args[0])
+        elif args[0].startswith("@"):
+            target_username = args[0].lower().replace("@", "")
+
+    if not target_id and not target_username:
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target, pass User ID, or mention @username.")
+
+    target_key = target_id if target_id else target_username
+    get_chat_data(update.effective_chat.id)["autoreply"][target_key] = "RANDOM_LINES"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🤖 Auto-reply trap active on {args[0] if args else target_id}.", parse_mode="Markdown")
 
 async def cmd_vautoreply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
-    if len(args) < 2: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +vautoreply <user_id> <msg>", parse_mode="Markdown")
-    target_id, msg = int(args[0]), " ".join(args[1:])
-    get_chat_data(update.effective_chat.id)["autoreply"][target_id] = msg
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🤖 Custom auto-reply trap active on {target_id}.", parse_mode="Markdown")
+    if len(args) < 2: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +vautoreply <user/id/@username> <msg>", parse_mode="Markdown")
+    
+    target_input = args[0]
+    msg = " ".join(args[1:])
+    target_key = int(target_input) if target_input.isdigit() else target_input.lower().replace("@", "")
+
+    get_chat_data(update.effective_chat.id)["autoreply"][target_key] = msg
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🤖 Custom auto-reply trap active on {target_input}.", parse_mode="Markdown")
 
 async def cmd_stopautoreply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     get_chat_data(update.effective_chat.id)["autoreply"].clear()
@@ -584,8 +628,7 @@ async def cmd_roasthi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if update.message.reply_to_message and update.message.reply_to_message.from_user:
         target_name = f"@{update.message.reply_to_message.from_user.username}" if update.message.reply_to_message.from_user.username else update.message.reply_to_message.from_user.first_name
-
-elif args:
+    elif args:
         target_name = " ".join(args)
         
     roast_text = random.choice(ROASTS_HI)
@@ -666,6 +709,7 @@ async def cmd_ungban(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.from_user: return
     user_id = update.message.from_user.id
+    username = update.message.from_user.username.lower() if update.message.from_user.username else ""
     chat_id = update.effective_chat.id
     chat_data = get_chat_data(chat_id)
     text = update.message.text.strip() if update.message.text else ""
@@ -687,9 +731,18 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
         try: return await update.message.delete()
         except Exception: pass
 
-    # Auto Reply Trap
-    if user_id in chat_data["autoreply"]:
-        try: await context.bot.send_message(chat_id=chat_id, text=chat_data["autoreply"][user_id])
+    # Auto Reply Trap (Swipe Reply Implementation)
+    autoreply_map = chat_data.get("autoreply", {})
+    if user_id in autoreply_map or username in autoreply_map:
+        target_key = user_id if user_id in autoreply_map else username
+        custom_val = autoreply_map[target_key]
+        reply_text = random.choice(AUTOREPLY_LINES) if custom_val == "RANDOM_LINES" else custom_val
+        try: 
+            await context.bot.send_message(
+                chat_id=chat_id, 
+                text=reply_text, 
+                reply_to_message_id=update.message.message_id
+            )
         except Exception: pass
 
     # Repeat Voice Trap (reptts)
@@ -707,9 +760,8 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
                 await context.bot.set_message_reaction(chat_id=chat_id, message_id=update.message.message_id, reaction=["🤣"])
             except Exception: pass
 
-    # Dynamic Commands Router (Auto-Delete Command Included)
+    # Dynamic Commands Router
     if text.startswith("+"):
-        # Command message ko group se auto-delete karne ki process:
         try:
             await update.message.delete()
         except Exception:
@@ -726,8 +778,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "flood": cmd_flood, "vflood": cmd_vflood, "stopflood": cmd_stopflood,
             "gcpfp": cmd_gcpfp, "stopgcpfp": cmd_stopgcpfp, "pfpswarm": cmd_pfpswarm,
             "voiceflood": cmd_voiceflood, "stopvoiceflood": cmd_stopvoiceflood,
-
-"mute": cmd_mute, "unmute": cmd_unmute, "mutelist": cmd_mutelist,
+            "mute": cmd_mute, "unmute": cmd_unmute, "mutelist": cmd_mutelist,
             "stripmedia": cmd_stripmedia, "stopstripmedia": cmd_stopstripmedia,
             "pfpstripper": cmd_pfpstripper,
             "autoreply": cmd_autoreply, "vautoreply": cmd_vautoreply, "stopautoreply": cmd_stopautoreply,
@@ -757,5 +808,5 @@ def main():
     print("Krishslayin ✝️ Core Fully Synchronized.")
     app.run_polling()
 
-if name == 'main':
+if __name__ == '__main__':
     main()
