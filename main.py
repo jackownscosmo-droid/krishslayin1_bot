@@ -7,7 +7,7 @@ from gtts import gTTS
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, MessageHandler, 
-    CallbackQueryHandler, filters, ContextTypes
+    CallbackQueryHandler, filters, ContextTypes, CommandHandler
 )
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -55,6 +55,27 @@ ROASTS_ENG = [
     "I'd explain it to you, but I don't have the time or the crayons to draw it out.",
     "You have an entire lifetime to be a fool, why not take today off?",
     "You bring so much peace to this chat... every time you go offline."
+]
+
+# --- Custom Raw Lines List for Autoreply, Target & Flood ---
+CUSTOM_RAW_LINES = [
+    "𝑩𝑯𝑨𝑮 𝑹𝑨𝑵𝑫𝒀𝑲𝑬 𝑻𝑬𝑹𝑰 𝑴𝑨 𝑪𝑯𝑼𝑫𝑹𝑰 𝑯𝑨𝑰 ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️",
+    "𝗚𝗢𝗢𝗗 𝗠𝗢𝗥𝗡𝗜𝗡𝗚 𝗥𝗔𝗡𝗗𝗜 𝗝𝗜 𝗔𝗣𝗞𝗘 𝗖𝗛𝗨𝗗𝗡𝗘 𝗞𝗔 𝗧𝗘𝗠 𝗛𝗢𝗚𝗬𝗔 👍🏿👍🏿👍🏿👍🏿👍🏿👍🏿",
+    "बड़े दुःख के साथ हँसना पढ़ रहा है😂  𝐓ᴜ तेरी माँ रंडी 🤍😅🔥",
+    "🐿️🪈🐿️🪈🐿️🪈🐿️🪈🐿️🪈\nTri maa rndy  tri maa rndy \n🪈🐿️🪈🐿️🪈🐿️🪈🐿️🪈🐿️",
+    "𝙏𝙀𝙍𝙄 𝙈𝘼 𝙑𝙄𝘿𝙃𝙑𝘼 𝙋𝙀𝙉𝙎𝙄𝙊𝙉 𝙆𝙃𝘼𝙉𝙀 𝙒𝘼𝙇𝙄 𝙍𝙉𝘿𝙄 🤣",
+    "𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙗𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯 😂👯😂👯😂👯 😂👯😂👯😂👯",
+    "हम सी आई डी से है अपनी मा नंगी करो🤣🤣🤣🤣🙏🙏🙏🙏🙏",
+    "𝐆ʀᴇᴇʙ𝐢 और दर्दनाक 𝐂ʜᴜᴅᴀᵢ \nतो तेरी मां ने देखी है 👀😝🤣"
+]
+
+CUSTOM_RANDOM_MESSAGES = [
+    "⚡ Krishslayin System Core is scanning the matrix...",
+    "🔥 Warning: High voltage energy detected in chat!",
+    "💀 Another day, another target neutralized by the core.",
+    "🚀 Nodes are fully synchronized and operational.",
+    "👑 Dominance established. Bow down to the core.",
+    "🛡️ Defense grid is active and watching everything."
 ]
 
 def get_chat_data(chat_id):
@@ -158,7 +179,8 @@ def get_menu_text(page: int):
             "• `+tts <text>` — Speech synthesis generator\n"
             "• `+ttsedits` — View supported TTS language codes\n"
             "• `+roasthi <user>` — Automated Hindi roast\n"
-            "• `+roasteng <user>` — Automated English roast"
+            "• `+roasteng <user>` — Automated English roast\n"
+            "• `+randommsg` — Send a random system dialogue"
         )
     elif page == 5:
         admin_list = "\n".join([f"• `{uid}`" for uid in AUTHORIZED_ADMINS])
@@ -260,10 +282,11 @@ async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "target" in chat_data["tasks"]: chat_data["tasks"]["target"].cancel()
 
     async def target_loop():
-        messages = [f"⚔️ Slayed by Krishslayin {user}", f"🔥 Fear the Core {user}", f"💀 Neutralized {user}"]
         idx = 0
         while True:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=messages[idx % len(messages)])
+            # Using random raw line combined with target user without extra prefix
+            msg_body = random.choice(CUSTOM_RAW_LINES)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{user} {msg_body}")
             idx += 1
             await asyncio.sleep(1.5)
     task = asyncio.create_task(target_loop())
@@ -324,7 +347,8 @@ async def cmd_flood(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     async def flood_loop():
         while True:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🌊 FLOODING {user} ⚡")
+            msg_body = random.choice(CUSTOM_RAW_LINES)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{user} {msg_body}")
             await asyncio.sleep(0.3)
     task = asyncio.create_task(flood_loop())
     chat_data["tasks"]["flood"] = task
@@ -340,7 +364,7 @@ async def cmd_vflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     async def vflood_loop():
         while True:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🌊 {user} {text}")
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{user} {text}")
             await asyncio.sleep(0.3)
     task = asyncio.create_task(vflood_loop())
     chat_data["tasks"]["flood"] = task
@@ -454,7 +478,8 @@ async def cmd_autoreply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = update.message.text.split()[1:]
     target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
     if not target_id: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target or pass User ID.")
-    get_chat_data(update.effective_chat.id)["autoreply"][target_id] = "⚡ Slayed by Krishslayin Core."
+    # Assigning random raw line to autoreply trap for this target
+    get_chat_data(update.effective_chat.id)["autoreply"][target_id] = "random_raw"
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🤖 Auto-reply trap active on `{target_id}`.", parse_mode="Markdown")
 
 async def cmd_vautoreply(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -607,150 +632,203 @@ async def cmd_roasteng(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🔥 {roast_text}")
 
-# --- Owner Controls ---
+async def cmd_randommsg(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chosen_msg = random.choice(CUSTOM_RANDOM_MESSAGES)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=chosen_msg, parse_mode="Markdown")
+
+# --- Owner Control Handlers ---
 
 async def cmd_cluster(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🖥️ **CLUSTER HEALTH:** All 10 Master Nodes Operating at 99.8% Efficiency.")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="⚡ **CLUSTER TELEMETRY:**\nAll 10 operational nodes online and fully synchronized.", parse_mode="Markdown")
 
 async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
     text = " ".join(update.message.text.split()[1:])
-    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: `+broadcast <text>`")
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"📢 **GLOBAL BROADCAST SENT:**\n{text}", parse_mode="Markdown")
+    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: `+broadcast <message>`", parse_mode="Markdown")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"📢 **GLOBAL BROADCAST:**\n\n{text}", parse_mode="Markdown")
 
-async def cmd_slayinpowergifted(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def cmd_gift_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
     args = update.message.text.split()[1:]
-    target_id = int(args[0]) if args and args[0].isdigit() else (update.message.reply_to_message.from_user.id if update.message.reply_to_message else None)
-    if target_id:
-        AUTHORIZED_ADMINS.add(target_id)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"👑 Admin rights granted to `{target_id}`.", parse_mode="Markdown")
+    if not args or not args[0].isdigit(): return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: `+slayinpowergifted <user_id>`", parse_mode="Markdown")
+    uid = int(args[0])
+    AUTHORIZED_ADMINS.add(uid)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"👑 Admin rights granted to `{uid}`.", parse_mode="Markdown")
 
-async def cmd_slayinpowertaken(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def cmd_take_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
     args = update.message.text.split()[1:]
-    target_id = int(args[0]) if args and args[0].isdigit() else (update.message.reply_to_message.from_user.id if update.message.reply_to_message else None)
-    if target_id and target_id != OWNER_ID:
-        AUTHORIZED_ADMINS.discard(target_id)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🗑️ Admin rights revoked from `{target_id}`.", parse_mode="Markdown")
+    if not args or not args[0].isdigit(): return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: `+slayinpowertaken <user_id>`", parse_mode="Markdown")
+    uid = int(args[0])
+    if uid == OWNER_ID: return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Cannot revoke owner rights.")
+    AUTHORIZED_ADMINS.discard(uid)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🛡️ Admin rights revoked from `{uid}`.", parse_mode="Markdown")
 
-async def cmd_slayinfor(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def cmd_list_admins(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
     admin_list = "\n".join([f"• `{uid}`" for uid in AUTHORIZED_ADMINS])
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"👑 **AUTHORIZED ADMINS:**\n{admin_list}", parse_mode="Markdown")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚡ **AUTHORIZED ADMINS:**\n{admin_list}", parse_mode="Markdown")
 
 async def cmd_gban(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != OWNER_ID: return
-    reply = update.message.reply_to_message
+    if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
+    reply = update.message.reply_to_message
     target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
-    if not target_id: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target user or pass ID.")
+    if not target_id: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: Reply to user or pass ID to gban.")
     GBANNED_USERS.add(target_id)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🚫 Target `{target_id}` globally blacklisted.", parse_mode="Markdown")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🔨 User `{target_id}` globally blacklisted.", parse_mode="Markdown")
 
 async def cmd_ungban(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != OWNER_ID: return
-    reply = update.message.reply_to_message
+    if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
+    reply = update.message.reply_to_message
     target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
-    if not target_id: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target user or pass ID.")
+    if not target_id: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: Reply to user or pass ID to ungban.")
     GBANNED_USERS.discard(target_id)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"✅ Target `{target_id}` removed from blacklist.", parse_mode="Markdown")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🕊️ User `{target_id}` removed from global blacklist.", parse_mode="Markdown")
 
-# --- Master Router & Automated Enforcer ---
+# --- Automated Background Watcher & Traps Engine ---
 
-async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.from_user: return
-    user_id = update.message.from_user.id
+async def global_watcher(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.effective_chat or not update.effective_user: return
+    user_id = update.effective_user.id
     chat_id = update.effective_chat.id
+
+    if user_id in GBANNED_USERS:
+        try: await update.message.delete()
+        except Exception: pass
+        return
+
     chat_data = get_chat_data(chat_id)
-    text = update.message.text.strip() if update.message.text else ""
 
-    # PFP Stripper check
-    if chat_data.get("pfpstripper") and update.message.new_chat_photo:
-        try: 
-            await context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
-            return
+    if user_id in chat_data["muted"]:
+        try: await update.message.delete()
         except Exception: pass
+        return
 
-    # Global Ban & Auto Mute Traps
-    if user_id in GBANNED_USERS or user_id in chat_data["muted"]:
-        try: return await update.message.delete()
+    if user_id in chat_data["stripmedia"] and (update.message.photo or update.message.video or update.message.document or update.message.voice or update.message.audio):
+        try: await update.message.delete()
         except Exception: pass
+        return
 
-    # Media Stripper Trap
-    if user_id in chat_data["stripmedia"] and (update.message.photo or update.message.video or update.message.document):
-        try: return await update.message.delete()
-        except Exception: pass
-
-    # Auto Reply Trap
     if user_id in chat_data["autoreply"]:
-        try: await context.bot.send_message(chat_id=chat_id, text=chat_data["autoreply"][user_id])
-        except Exception: pass
+        reply_val = chat_data["autoreply"][user_id]
+        if reply_val == "random_raw":
+            selected_line = random.choice(CUSTOM_RAW_LINES)
+            await update.message.reply_text(selected_line)
+        else:
+            await update.message.reply_text(reply_val)
 
-    # Repeat Voice Trap (reptts)
-    if user_id in chat_data["reptts"] and text:
+    if user_id in chat_data["reptts"]:
         try:
-            tts = gTTS(text=text, lang="hi")
-            tts.save("reptts.mp3")
-            await context.bot.send_voice(chat_id=chat_id, voice=open("reptts.mp3", "rb"))
-        except Exception: pass
-
-    # Auto Reactions Trap (togglereact)
-    if not update.message.from_user.is_bot and not text.startswith("+"):
-        if chat_data.get("togglereact", False):
-            try:
-                await context.bot.set_message_reaction(chat_id=chat_id, message_id=update.message.message_id, reaction=["🤣"])
-            except Exception: pass
-
-    # Dynamic Commands Router (Auto-Delete Command Included)
-    if text.startswith("+"):
-        # Command message ko group se auto-delete karne ki process:
-        try:
-            await update.message.delete()
+            text_content = update.message.text or "Slayed."
+            tts = gTTS(text=text_content, lang="hi")
+            tts.save("trap_tts.mp3")
+            await update.message.reply_voice(voice=open("trap_tts.mp3", "rb"))
         except Exception:
             pass
 
-        cmd = text.split()[0][1:].lower()
-        routes = {
-            "start": lambda u, c: c.bot.send_message(chat_id=chat_id, text=get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
-            "menu": lambda u, c: c.bot.send_message(chat_id=chat_id, text=get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
-            "panel": lambda u, c: c.bot.send_message(chat_id=chat_id, text="🎛️ **BATTLE-DECK CONTROL PANEL:**", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Abort All Active Tasks 🚨", callback_data="stop_all")]]), parse_mode="Markdown"),
-            "gcnc": cmd_gcnc, "vgcnc": cmd_vgcnc, "stopgcnc": cmd_stopgcnc,
-            "target": cmd_target, "vtarget": cmd_vtarget, "stoptarget": cmd_stoptarget,
-            "spam": cmd_spam, "stopspam": cmd_stopspam,
-            "flood": cmd_flood, "vflood": cmd_vflood, "stopflood": cmd_stopflood,
-            "gcpfp": cmd_gcpfp, "stopgcpfp": cmd_stopgcpfp, "pfpswarm": cmd_pfpswarm,
-            "voiceflood": cmd_voiceflood, "stopvoiceflood": cmd_stopvoiceflood,
-            "mute": cmd_mute, "unmute": cmd_unmute, "mutelist": cmd_mutelist,
-            "stripmedia": cmd_stripmedia, "stopstripmedia": cmd_stopstripmedia,
-            "pfpstripper": cmd_pfpstripper,
-            "autoreply": cmd_autoreply, "vautoreply": cmd_vautoreply, "stopautoreply": cmd_stopautoreply,
-            "reptts": cmd_reptts, "stopreptts": cmd_stopreptts,
-            "clean": cmd_clean, "togglereact": cmd_togglereact, "stopall": cmd_stopall,
-            "scan": cmd_scan, "ping": cmd_ping, "getid": cmd_getid, "status": cmd_status,
-            "omg": cmd_omg, "tts": cmd_tts, "ttsedits": cmd_ttsedits,
-            "roasthi": cmd_roasthi, "roasteng": cmd_roasteng,
-            "cluster": cmd_cluster, "broadcast": cmd_broadcast,
-            "slayinpowergifted": cmd_slayinpowergifted, "slayinpowertaken": cmd_slayinpowertaken,
-            "slayinfor": cmd_slayinfor, "gban": cmd_gban, "ungban": cmd_ungban
-        }
-        if cmd in routes:
-            handler = routes[cmd]
-            await handler(update, context)
+    if chat_data["togglereact"]:
+        try:
+            await update.message.set_reaction(reaction="🤣")
+        except Exception:
+            pass
+
+async def pfp_watcher(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.effective_chat: return
+    chat_data = get_chat_data(update.effective_chat.id)
+    if chat_data["pfpstripper"] and update.effective_message and update.effective_message.new_chat_photo:
+        try:
+            await update.effective_message.delete()
+        except Exception:
+            pass
+
+# --- Main Initialization ---
 
 def main():
-    TOKEN = os.environ.get("BOT_TOKEN")
-    if not TOKEN:
-        print("BOT_TOKEN missing!")
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    if not token:
+        print("❌ ERROR: TELEGRAM_BOT_TOKEN environment variable not set!")
         return
 
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CallbackQueryHandler(menu_callback_handler))
-    app.add_handler(MessageHandler(filters.ALL, global_message_router))
+    app = ApplicationBuilder().token(token).build()
 
-    print("Krishslayin ✝️ Core Fully Synchronized.")
+    async def cmd_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        await update.message.reply_text(get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown")
+
+    async def cmd_panel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        if not is_admin(update.effective_user.id): return
+        keyboard = [
+            [InlineKeyboardButton("Abort All Active Tasks 🚨", callback_data="stop_all")],
+            [InlineKeyboardButton("✝️ Return to Main Menu", callback_data="menu_1")]
+        ]
+        await update.message.reply_text("🎛️ **BATTLE-DECK CONTROL PANEL:**\nDirect chat override active.", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+
+    app.add_handler(CommandHandler("menu", cmd_menu))
+    app.add_handler(CommandHandler("panel", cmd_panel))
+    app.add_handler(CallbackQueryHandler(menu_callback_handler))
+
+    # Combat Commands
+    app.add_handler(CommandHandler("gcnc", cmd_gcnc))
+    app.add_handler(CommandHandler("vgcnc", cmd_vgcnc))
+    app.add_handler(CommandHandler("stopgcnc", cmd_stopgcnc))
+    app.add_handler(CommandHandler("target", cmd_target))
+    app.add_handler(CommandHandler("vtarget", cmd_vtarget))
+    app.add_handler(CommandHandler("stoptarget", cmd_stoptarget))
+    app.add_handler(CommandHandler("spam", cmd_spam))
+    app.add_handler(CommandHandler("stopspam", cmd_stopspam))
+    app.add_handler(CommandHandler("flood", cmd_flood))
+    app.add_handler(CommandHandler("vflood", cmd_vflood))
+    app.add_handler(CommandHandler("stopflood", cmd_stopflood))
+    app.add_handler(CommandHandler("gcpfp", cmd_gcpfp))
+    app.add_handler(CommandHandler("stopgcpfp", cmd_stopgcpfp))
+    app.add_handler(CommandHandler("pfpswarm", cmd_pfpswarm))
+    app.add_handler(CommandHandler("voiceflood", cmd_voiceflood))
+    app.add_handler(CommandHandler("stopvoiceflood", cmd_stopvoiceflood))
+
+    # Traps & Target Commands
+    app.add_handler(CommandHandler("mute", cmd_mute))
+    app.add_handler(CommandHandler("unmute", cmd_unmute))
+    app.add_handler(CommandHandler("mutelist", cmd_mutelist))
+    app.add_handler(CommandHandler("stripmedia", cmd_stripmedia))
+    app.add_handler(CommandHandler("stopstripmedia", cmd_stopstripmedia))
+    app.add_handler(CommandHandler("pfpstripper", cmd_pfpstripper))
+    app.add_handler(CommandHandler("autoreply", cmd_autoreply))
+    app.add_handler(CommandHandler("vautoreply", cmd_vautoreply))
+    app.add_handler(CommandHandler("stopautoreply", cmd_stopautoreply))
+    app.add_handler(CommandHandler("reptts", cmd_reptts))
+    app.add_handler(CommandHandler("stopreptts", cmd_stopreptts))
+    app.add_handler(CommandHandler("clean", cmd_clean))
+    app.add_handler(CommandHandler("togglereact", cmd_togglereact))
+    app.add_handler(CommandHandler("stopall", cmd_stopall))
+
+    # Tools & Blackout Commands
+    app.add_handler(CommandHandler("scan", cmd_scan))
+    app.add_handler(CommandHandler("ping", cmd_ping))
+    app.add_handler(CommandHandler("getid", cmd_getid))
+    app.add_handler(CommandHandler("status", cmd_status))
+    app.add_handler(CommandHandler("omg", cmd_omg))
+    app.add_handler(CommandHandler("tts", cmd_tts))
+    app.add_handler(CommandHandler("ttsedits", cmd_ttsedits))
+    app.add_handler(CommandHandler("roasthi", cmd_roasthi))
+    app.add_handler(CommandHandler("roasteng", cmd_roasteng))
+    app.add_handler(CommandHandler("randommsg", cmd_randommsg))
+
+    # Owner Controls
+    app.add_handler(CommandHandler("cluster", cmd_cluster))
+    app.add_handler(CommandHandler("broadcast", cmd_broadcast))
+    app.add_handler(CommandHandler("slayinpowergifted", cmd_gift_admin))
+    app.add_handler(CommandHandler("slayinpowertaken", cmd_take_admin))
+    app.add_handler(CommandHandler("slayinfor", cmd_list_admins))
+    app.add_handler(CommandHandler("gban", cmd_gban))
+    app.add_handler(CommandHandler("ungban", cmd_ungban))
+
+    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, global_watcher))
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_PHOTO, pfp_watcher))
+
+    print("🚀 KRISHSLAYIN ✝️ SYSTEM CORE INITIALIZED SUCCESSFULLY.")
     app.run_polling()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
