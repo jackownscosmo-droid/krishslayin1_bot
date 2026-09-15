@@ -4,7 +4,7 @@ import random
 import asyncio
 import logging
 from gtts import gTTS
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReactionTypeEmoji
 from telegram.ext import (
     ApplicationBuilder, MessageHandler, 
     CallbackQueryHandler, filters, ContextTypes
@@ -110,7 +110,7 @@ def get_menu_text(page: int):
             "• `+mute <user>` — Shadow-mute target\n"
             "• `+unmute <user>` — Unmute target\n"
             "• `+autoreply <user>` — Auto-reply trap\n"
-            "• `+togglereact` — Toggle 🤣 Auto-Reply (Only for Owner/Admins)\n"
+            "• `+togglereact` — Toggle Real 🤣 Reaction (Owner/Admins)\n"
             "• `+stopall` — Master Kill Switch"
         )
     elif page == 4:
@@ -259,6 +259,15 @@ async def cmd_ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     latency = round((time.time() - start) * 1000, 2)
     await msg.edit_text(f"📶 Latency: `{latency}ms`", parse_mode="Markdown")
 
+async def cmd_getid(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    chat = update.effective_chat
+    reply = update.message.reply_to_message
+    text = f"👤 **Your ID:** `{user.id}`\n💬 **Chat ID:** `{chat.id}`"
+    if reply and reply.from_user:
+        text += f"\n🎯 **Replied User ID:** `{reply.from_user.id}`"
+    await update.message.reply_text(text, parse_mode="Markdown")
+
 async def cmd_roasthi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target_name = " ".join(update.message.text.split()[1:])
     roast_text = random.choice(ROASTS_HI)
@@ -274,16 +283,17 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     text = update.message.text.strip() if update.message.text else ""
 
     # Don't react to bot's own messages or commands
-    if update.message.from_user.is_bot or text.startswith("+"):
-        pass
-    else:
-        # 1. Selective Auto-Reaction (Only for Owner & Authorized Admins)
-        if chat_data.get("togglereact", False):
-            if is_admin(user_id):
-                try:
-                    await update.message.reply_text("🤣")
-                except Exception as e:
-                    logging.error(f"Error sending reaction: {e}")
+    if not update.message.from_user.is_bot and not text.startswith("+"):
+        # Real Telegram Emoji Reaction (Only for Owner & Authorized Admins)
+        if chat_data.get("togglereact", False) and is_admin(user_id):
+            try:
+                await context.bot.set_message_reaction(
+                    chat_id=chat_id,
+                    message_id=update.message.message_id,
+                    reaction=[ReactionTypeEmoji(emoji='🤣')]
+                )
+            except Exception as e:
+                logging.error(f"Error setting reaction: {e}")
 
     # 2. Command Execution Router
     if text.startswith("+"):
@@ -295,7 +305,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "target": cmd_target, "stoptarget": cmd_stoptarget,
             "spam": cmd_spam, "stopspam": cmd_stopspam,
             "togglereact": cmd_togglereact, "stopall": cmd_stopall,
-            "ping": cmd_ping, "roasthi": cmd_roasthi
+            "ping": cmd_ping, "getid": cmd_getid, "roasthi": cmd_roasthi
         }
         if cmd in routes:
             await routes[cmd](update, context)
