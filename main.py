@@ -19,63 +19,46 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 # Global Configuration & Security Protocol
 OWNER_ID = int(os.environ.get("OWNER_ID", "123456789"))
-AUTHORIZED_ADMINS = set([OWNER_ID])
+MAIN_BOT_USERNAME = os.environ.get("MAIN_BOT_USERNAME", "krishslayin1_bot").lower().replace("@", "")
+LOG_CHANNEL_ID = os.environ.get("LOG_CHANNEL_ID", None)
+
+AUTHORIZED_ADMINS = set([8821066459])
 GBANNED_USERS = set()
 CHAT_TASKS = {}
 
-# Fixed Reaction Emoji (Only 🤣 will be used)
 REACTION_EMOJI = "🤣"
 
-# Raw Text Line Arrays (Wrapped safely with Triple Quotes)
+# Main-Bot-Only Commands list
+MAIN_BOT_ONLY_COMMANDS = {"menu", "start", "gban", "ungban", "mute", "unmute"}
+
 AUTOREPLY_LINES = [
     r"""बड़े दुःख के साथ हँसना पढ़ रहा है😂  𝐓ᴜ तेरी माँ रंडी 🤍😅🔥""",
     r"""𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙗𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯 😂👯😂👯😂👯 😂👯😂👯😂👯""",
     r"""𝙏𝙀𝙍𝙄 𝙈𝘼 𝑑𝙄𝘿🇭🇻𝘼 𝙋𝙀𝙉𝙎𝙄𝙊𝙉 𝙆𝙃𝘼𝙉𝙀 𝙒𝘼𝙇𝙄 𝙍𝙉𝘿𝙄 🤣""",
-    r"""तेरी maa की chut में ऐसा HACK lgaunga 
-Light की speed में बच्चे देगी""",
-    r"""𝑩𝑯𝑨𝑮 𝑹𝑨𝑵𝑫𝒀𝑲𝑬 𝑻𝑬𝑹𝑰 𝑴𝑨 𝑪𝑯𝑼𝑫𝑹𝑰 𝑯𝑨𝑰 ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️""",
-    r"""𝘽𝙃𝘼𝙂𝘼 𝘽𝙃𝘼𝙂𝘼 𝙆𝙀 𝙈𝘼𝙍𝙐𝙉𝙂𝘼 🤣🩷🙌🏾""",
-    r"""𝐆ʀᴇᴇਬ𝐢 और दर्दनाक 𝐂ʜᴜᴅᴀ𝐢 
-तो तेरी मां ने देखी है 👀😝🤣"""
+    r"""तेरी maa की chut में ऐसा HACK lgaunga Light की speed में बच्चे देगी""",
+    r"""𝑩𝑯𝑨𝑮 𝑹𝑨𝑵𝑫𝒀𝑲𝑬 𝑻𝑬𝑹𝑰 𝑴𝑨 𝑪𝑯𝑼𝑫𝑹𝑰 𝑯𝑨𝑰 ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️""",
+    r"""𝘽𝙃𝘼𝙂𝘼 𝘽𝙃𝘼𝙂𝘼 𝙆𝙀 𝙈𝘼𝙍𝙐𝙉𝙂𝘼 🤣🩷🙌🏾"""
 ]
 
 TARGET_LINES = [
-    r"""˚∧＿∧   +        — ͟͞͞🥛
-(  •‿• )つ  — ͟͞͞ 🥛         — ͟͞͞🥛 +
-(つ  <                — ͟͞͞🥛
-｜_つ      +  — ͟͞͞🥛         — ͟͞͞🥛 ˚
-`し´Special attack: teri  mummy ka dudh 😂😂 kilas randi ke""",
+    r"""˚∧＿∧   +        — ͟͞͞🥛 (  •‿• )つ  Special attack: teri mummy ka dudh 😂😂""",
     r"""𝙉𝙀𝙆𝘼𝘼𝘼𝙇 𝙈𝘼𝘿𝘼𝘼𝙍𝘾𝙃𝘿👍🏼👍🏼👍🏼👍🏼👍🏼""",
-    r"""🚓🚜🚌🚙🚃
-     🚙🌍🌎🌏🌎🚕
-  🇩🇪🇪🇸🌍🚔
-🚘🌏🇷🇺🇬🇧🇮🇹🇪🇸🌏🚘
-🚔🌍🇰🇷🇯🇵🇺🇸🇬🇧🌍🚖
-  🚖🌎🇮🇹🇫🇷🇰🇷🌍🚘
-     🚍🌏🌍🌎🌏🚔""",
-    r"""तेरी बहन का भोसड़ा 😂🤸🏻‍♂️😂🤸🏻‍♂️😂🤸🏻‍♂️😂𝘾𝙃𝙐𝙋 𝙍𝙉𝘿𝙄𝙆𝙀""",
-    r"""ᴍᴀᴀғɪ ᴍᴀɴɢʟᴇ ᴋʏᴀ ᴘᴀᴛᴀ ʙᴀᴅʙᴏʏ ᴍᴀᴀғ ᴋʀᴅ ᴛᴜᴊᴇ"""
+    r"""तेरी बहन का भोसड़ा 😂🤸🏻‍♂️😂🤸🏻‍♂️ 𝘾𝙃𝙐𝙋 𝙍𝙉𝘿𝙄𝙆𝙀"""
 ]
 
 FLOOD_LINES = [
-    r"""𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙗𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯 😂👯😂👯😂👯 😂👯😂👯😂👯""",
-    r"""⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆⋆͙̈ ° ♪ °••° ⋆""",
+    r"""𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙗𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯""",
     r"""तेरो ma ko चोदने k बाद उसको ऐसे चंद सितारए नजर आएंगे""",
-    r"""😝 Beta 🥶 लंड 🔥 पकड़ 😡 muh 😜 pe 😁 रगड़ 😂""",
-    r"""𝐁ᴀᴀ𝐏 𝐊ᴏ 𝐑ᴇ𝐏ʟ𝐘 𝐁ᴀᴅ𝐈 𝐓ᴇ𝐙 𝐃ᴇʀ𝐀 𝐇ᴀɪ 😁😁🌷""",
-    r"""𝙀𝙆 𝘽𝘼𝙍 𝘿𝙄𝙈𝘼𝙂 𝙂𝙃𝘼𝙍𝘼𝙈 𝙃𝙊𝙂𝙀𝙔𝘼 𝙉𝘼 𝘽𝙀𝙏𝘼"""
+    r"""😝 Beta 🥶 लंड 🔥 पकड़ 😡 muh 😜 pe 😁 रगड़ 😂"""
 ]
 
 ROASTS_HI = [
     "Teri shakal dekh ke Telegram ka server bhi crash ho jaye!",
-    "Itna dimaag agar sahi jagah lagaya hota toh aaj NASA me hota, yahan bakchodi nahi kar raha hota!",
-    "Tujhe dekh kar toh Google bhi bolta hai: 'Search Not Found'!",
-    "Teri baaten sun kar mera battery percentage bhi drop ho gaya!"
+    "Itna dimaag agar sahi jagah lagaya hota toh aaj NASA me hota!"
 ]
 
 ROASTS_ENG = [
     "You bring everyone so much joy... when you leave the room!",
-    "I'd agree with you, but then we'd both be wrong.",
     "Your brain is like the 404 error page—permanently missing content."
 ]
 
@@ -95,7 +78,15 @@ def get_chat_data(chat_id):
 def is_admin(user_id):
     return user_id in AUTHORIZED_ADMINS or user_id == OWNER_ID
 
-# --- Interactive Dynamic UI ---
+async def send_log(context: ContextTypes.DEFAULT_TYPE, text: str):
+    """Log channel notification system"""
+    if LOG_CHANNEL_ID:
+        try:
+            await context.bot.send_message(chat_id=int(LOG_CHANNEL_ID), text=text, parse_mode="Markdown")
+        except Exception as e:
+            logging.error(f"Failed to send log: {e}")
+
+# --- UI Helpers ---
 
 def get_menu_keyboard(page: int):
     if page == 1:
@@ -216,6 +207,7 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         for task in list(chat_data["tasks"].values()): task.cancel()
         chat_data["tasks"].clear()
         chat_data["react_mode"] = None
+        await send_log(context, f"🚨 *EMERGENCY KILL SWITCH* triggered via Control Panel in Chat `{query.message.chat_id}` by User `{query.from_user.id}`")
         return await query.edit_message_text("🚨 ALL ACTIVE TASKS ABORTED.", reply_markup=get_menu_keyboard(1))
     elif data.startswith("menu_"):
         page = int(data.split("_")[1])
@@ -326,6 +318,7 @@ async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     task = asyncio.create_task(spam_loop())
     chat_data["tasks"]["spam"] = task
     await context.bot.send_message(chat_id=update.effective_chat.id, text="🚀 High-speed spam initialized.")
+    await send_log(context, f"⚠️ *SPAM STARTED*\nChat: `{update.effective_chat.id}`\nAdmin: `{update.effective_user.id}`")
 
 async def cmd_stopspam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
@@ -531,7 +524,6 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try: await status.delete()
     except Exception: pass
 
-# Reaction Switch Commands
 async def cmd_togglereactall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     chat_data = get_chat_data(update.effective_chat.id)
@@ -559,6 +551,7 @@ async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data["tasks"].clear()
     chat_data["react_mode"] = None
     await context.bot.send_message(chat_id=update.effective_chat.id, text="🚨 EMERGENCY KILL SWITCH ENGAGED! All threads stopped.")
+    await send_log(context, f"🚨 *EMERGENCY KILL SWITCH ENGAGED*\nChat: `{update.effective_chat.id}`\nAdmin: `{update.effective_user.id}`")
 
 # --- Utilities & Owner Commands ---
 
@@ -680,6 +673,7 @@ async def cmd_gban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not target_id: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target user or pass ID.")
     GBANNED_USERS.add(target_id)
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🚫 Target {target_id} globally blacklisted.")
+    await send_log(context, f"🚫 *GLOBAL BAN APPLIED*\nTarget: `{target_id}`\nAdmin: `{update.effective_user.id}`")
 
 async def cmd_ungban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
@@ -689,6 +683,7 @@ async def cmd_ungban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not target_id: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target user or pass ID.")
     GBANNED_USERS.discard(target_id)
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"✅ Target {target_id} removed from blacklist.")
+    await send_log(context, f"✅ *GLOBAL UNBAN APPLIED*\nTarget: `{target_id}`\nAdmin: `{update.effective_user.id}`")
 
 # --- Master Message Core Router ---
 
@@ -699,6 +694,16 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     chat_id = update.effective_chat.id
     chat_data = get_chat_data(chat_id)
     text = update.message.text.strip() if update.message.text else ""
+
+    # Bot Specific Filtering
+    bot_username = (await context.bot.get_me()).username.lower()
+    is_main_bot = (bot_username == MAIN_BOT_USERNAME)
+
+    # Owner Command Auto Delete
+    if user_id == OWNER_ID and text.startswith("+"):
+        try: 
+            await update.message.delete()
+        except Exception: pass
 
     # PFP Stripper check
     if chat_data.get("pfpstripper") and update.message.new_chat_photo:
@@ -739,7 +744,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             await context.bot.send_voice(chat_id=chat_id, voice=open("reptts.mp3", "rb"))
         except Exception: pass
 
-    # Fixed Reaction Logic (Always reacts with 🤣)
+    # Fixed Reaction Logic
     react_mode = chat_data.get("react_mode")
     if react_mode is not None and not text.startswith("+"):
         should_react = False
@@ -760,10 +765,17 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
 
     # Dynamic Commands Router
     if text.startswith("+"):
-        try: await update.message.delete()
-        except Exception: pass
-
         cmd = text.split()[0][1:].lower()
+
+        # Check if the command is exclusive to the MAIN BOT
+        if cmd in MAIN_BOT_ONLY_COMMANDS and not is_main_bot:
+            return  # Non-main bots will completely ignore main commands
+
+        # Auto-delete for regular admin commands
+        if user_id != OWNER_ID:
+            try: await update.message.delete()
+            except Exception: pass
+
         routes = {
             "start": lambda u, c: c.bot.send_message(chat_id=chat_id, text=get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
             "menu": lambda u, c: c.bot.send_message(chat_id=chat_id, text=get_menu_text(1), reply_markup=get_menu_keyboard(1), parse_mode="Markdown"),
@@ -791,18 +803,34 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             handler = routes[cmd]
             await handler(update, context)
 
-def main():
-    TOKEN = os.environ.get("BOT_TOKEN")
-    if not TOKEN:
-        print("BOT_TOKEN missing!")
-        return
-
-    app = ApplicationBuilder().token(TOKEN).build()
+async def start_single_bot(token: str, bot_index: int):
+    app = ApplicationBuilder().token(token).build()
     app.add_handler(CallbackQueryHandler(menu_callback_handler))
     app.add_handler(MessageHandler(filters.ALL, global_message_router))
 
-    print("Krishslayin ✝️ Core Fully Synchronized.")
-    app.run_polling()
+    print(f"✅ Bot #{bot_index} initialized.")
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling()
+    await asyncio.Event().wait()
+
+async def run_all_bots():
+    tokens = []
+    for key, value in os.environ.items():
+        if key.startswith("BOT_TOKEN") and value.strip():
+            tokens.append(value.strip())
+
+    if not tokens:
+        print("❌ Error: No BOT_TOKEN found in Environment Variables!")
+        return
+
+    print(f"🚀 Starting {len(tokens)} bots simultaneously...")
+
+    tasks = [asyncio.create_task(start_single_bot(token, idx)) for idx, token in enumerate(tokens, start=1)]
+    await asyncio.gather(*tasks)
 
 if __name__ == '__main__':
-    main()
+    try:
+        asyncio.run(run_all_bots())
+    except (KeyboardInterrupt, SystemExit):
+        print("🛑 All bots stopped successfully.")
