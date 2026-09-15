@@ -109,8 +109,8 @@ def get_menu_text(page: int):
         return (
             "⚔️ **COMBAT & WARFARE**\n"
             "────────────────────────────\n"
-            "• `+gcnc <name>` — Coordinated title loop\n"
-            "• `+vgcnc [spd] <Title 1 | Title 2>` — Title rotator\n"
+            "• `+gcnc <name>` — High-speed title loop\n"
+            "• `+vgcnc [spd] <Title 1 | Title 2>` — Fast title rotator\n"
             "• `+stopgcnc` — Halt active title loop\n"
             "• `+target <user>` — Mention loop\n"
             "• `+vtarget <user> <text>` — Custom mention loop\n"
@@ -143,7 +143,7 @@ def get_menu_text(page: int):
             "• `+reptts <user>` — Voice trap\n"
             "• `+stopreptts` — Disarm voice trap\n"
             "• `+clean [count]` — Purge recent messages\n"
-            "• `+togglereact` — Toggle emoji auto-reactions\n"
+            "• `+togglereact` — Toggle 🤣 auto-reactions\n"
             "• `+stopall` — Kill switch (stops all tasks in chat)"
         )
     elif page == 4:
@@ -199,7 +199,7 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         page = int(data.split("_")[1])
         await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page), parse_mode="Markdown")
 
-# --- Combat Handlers ---
+# --- Fast Combat Handlers ---
 
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -214,10 +214,10 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
                 idx += 1
             except Exception: pass
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(0.5)
     task = asyncio.create_task(gcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await update.message.reply_text("⚔️ Title loop activated.")
+    await update.message.reply_text("⚔️ High-speed title loop activated (0.5s).")
 
 async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -235,10 +235,10 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
                 idx += 1
             except Exception: pass
-            await asyncio.sleep(1.5)
+            await asyncio.sleep(0.5)
     task = asyncio.create_task(vgcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await update.message.reply_text("⚡ Title Rotator engaged.")
+    await update.message.reply_text("⚡ Fast Title Rotator engaged (0.5s).")
 
 async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
@@ -462,7 +462,7 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_togglereact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     chat_data["togglereact"] = not chat_data["togglereact"]
-    await update.message.reply_text(f"🎭 Auto-reactions: `{chat_data['togglereact']}`", parse_mode="Markdown")
+    await update.message.reply_text(f"🎭 Auto-reaction (🤣): `{chat_data['togglereact']}`", parse_mode="Markdown")
 
 async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
@@ -475,7 +475,7 @@ async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     members = await chat.get_member_count()
-    await update.message.reply_text(f"📊 **CHAT MATRIX MATRIX SCAN:**\n• Title: `{chat.title}`\n• ID: `{chat.id}`\n• Members: `{members}`", parse_mode="Markdown")
+    await update.message.reply_text(f"📊 **CHAT MATRIX SCAN:**\n• Title: `{chat.title}`\n• ID: `{chat.id}`\n• Members: `{members}`", parse_mode="Markdown")
 
 async def cmd_ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     start = time.time()
@@ -612,7 +612,8 @@ async def cmd_ungban(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.from_user: return
     user_id = update.message.from_user.id
-    chat_data = get_chat_data(update.effective_chat.id)
+    chat_id = update.effective_chat.id
+    chat_data = get_chat_data(chat_id)
 
     # Auto Mute & Media Stripper Traps
     if user_id in GBANNED_USERS or user_id in chat_data["muted"]:
@@ -625,6 +626,16 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
 
     if user_id in chat_data["autoreply"]:
         await update.message.reply_text(chat_data["autoreply"][user_id])
+
+    # Auto Reaction Engine (Only 🤣 Emoji)
+    if chat_data.get("togglereact", False):
+        try:
+            await context.bot.set_message_reaction(
+                chat_id=chat_id,
+                message_id=update.message.message_id,
+                reaction="🤣"
+            )
+        except Exception: pass
 
     text = update.message.text.strip() if update.message.text else ""
     if not text.startswith("+"): return
