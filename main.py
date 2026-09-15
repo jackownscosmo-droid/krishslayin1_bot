@@ -4,7 +4,7 @@ import random
 import asyncio
 import logging
 from gtts import gTTS
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReactionTypeEmoji
 from telegram.ext import (
     ApplicationBuilder, MessageHandler, 
     CallbackQueryHandler, filters, ContextTypes
@@ -109,17 +109,17 @@ def get_menu_text(page: int):
         return (
             "⚔️ **COMBAT & WARFARE**\n"
             "────────────────────────────\n"
-            "• `+gcnc <name>` — High-speed title loop\n"
-            "• `+vgcnc [spd] <Title 1 | Title 2>` — Fast title rotator\n"
+            "• `+gcnc <name>` — High-speed title loop (0.5s)\n"
+            "• `+vgcnc <Title 1 | Title 2>` — Fast title rotator (0.5s)\n"
             "• `+stopgcnc` — Halt active title loop\n"
             "• `+target <user>` — Mention loop\n"
             "• `+vtarget <user> <text>` — Custom mention loop\n"
-            "• `+stoptarget [user]` — Disarm targeting loop\n"
+            "• `+stoptarget` — Disarm targeting loop\n"
             "• `+spam <text>` — Synchronized high-speed spam\n"
             "• `+stopspam` — Terminate active spam\n"
             "• `+flood <user>` — Mention flood\n"
             "• `+vflood <user> <text>` — Custom mention flood\n"
-            "• `+stopflood [user]` — Stop mention flood\n"
+            "• `+stopflood` — Stop mention flood\n"
             "• `+gcpfp` — Group photo loop (reply to image)\n"
             "• `+stopgcpfp` — Stop photo loop\n"
             "• `+pfpswarm` — Multi-image rotator\n"
@@ -144,7 +144,7 @@ def get_menu_text(page: int):
             "• `+stopreptts` — Disarm voice trap\n"
             "• `+clean [count]` — Purge recent messages\n"
             "• `+togglereact` — Toggle 🤣 auto-reactions\n"
-            "• `+stopall` — Kill switch (stops all tasks in chat)"
+            "• `+stopall` — Master Kill Switch (Stop everything active)"
         )
     elif page == 4:
         return (
@@ -192,9 +192,11 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         return await query.edit_message_text("🎛️ **BATTLE-DECK CONTROL PANEL:**\nDirect chat override active.", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
     elif data == "stop_all":
         chat_data = get_chat_data(query.message.chat_id)
-        for task in chat_data["tasks"].values(): task.cancel()
+        for task in chat_data["tasks"].values(): 
+            task.cancel()
         chat_data["tasks"].clear()
-        return await query.edit_message_text("🚨 ALL ACTIVE TASKS ABORTED.", reply_markup=get_menu_keyboard(1))
+        chat_data["togglereact"] = False
+        return await query.edit_message_text("🚨 MASTER KILL SWITCH ACTIVATED! All active loops stopped.", reply_markup=get_menu_keyboard(1))
     elif data.startswith("menu_"):
         page = int(data.split("_")[1])
         await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page), parse_mode="Markdown")
@@ -206,6 +208,10 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = update.message.text.split()[1:]
     name = " ".join(args) or "KRISHSLAYIN"
     chat_data = get_chat_data(update.effective_chat.id)
+    
+    if "gcnc" in chat_data["tasks"]:
+        chat_data["tasks"]["gcnc"].cancel()
+
     async def gcnc_loop():
         titles = [f"⚡ {name} ⚡", f"🔥 {name} 🔥", f"👑 {name} 👑"]
         idx = 0
@@ -215,6 +221,7 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 idx += 1
             except Exception: pass
             await asyncio.sleep(0.5)
+            
     task = asyncio.create_task(gcnc_loop())
     chat_data["tasks"]["gcnc"] = task
     await update.message.reply_text("⚔️ High-speed title loop activated (0.5s).")
@@ -228,6 +235,10 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not titles: return await update.message.reply_text("Usage: `+vgcnc Title 1 | Title 2`", parse_mode="Markdown")
 
     chat_data = get_chat_data(update.effective_chat.id)
+    
+    if "gcnc" in chat_data["tasks"]:
+        chat_data["tasks"]["gcnc"].cancel()
+
     async def vgcnc_loop():
         idx = 0
         while True:
@@ -236,6 +247,7 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 idx += 1
             except Exception: pass
             await asyncio.sleep(0.5)
+            
     task = asyncio.create_task(vgcnc_loop())
     chat_data["tasks"]["gcnc"] = task
     await update.message.reply_text("⚡ Fast Title Rotator engaged (0.5s).")
@@ -246,12 +258,18 @@ async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_data["tasks"]["gcnc"].cancel()
         del chat_data["tasks"]["gcnc"]
         await update.message.reply_text("🛑 Title loop disarmed.")
+    else:
+        await update.message.reply_text("⚠️ No active title loop found.")
 
 async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
     user = args[0] if args else "@target"
     chat_data = get_chat_data(update.effective_chat.id)
+    
+    if "target" in chat_data["tasks"]:
+        chat_data["tasks"]["target"].cancel()
+
     async def target_loop():
         messages = [f"⚔️ Slayed by Krishslayin {user}", f"🔥 Fear the Core {user}", f"💀 Neutralized {user}"]
         idx = 0
@@ -259,6 +277,7 @@ async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=update.effective_chat.id, text=messages[idx % len(messages)])
             idx += 1
             await asyncio.sleep(1.5)
+            
     task = asyncio.create_task(target_loop())
     chat_data["tasks"]["target"] = task
     await update.message.reply_text(f"🎯 Targeting engaged on {user}.")
@@ -269,10 +288,15 @@ async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(args) < 2: return await update.message.reply_text("Usage: `+vtarget <user> <text>`", parse_mode="Markdown")
     user, custom_text = args[0], " ".join(args[1:])
     chat_data = get_chat_data(update.effective_chat.id)
+    
+    if "target" in chat_data["tasks"]:
+        chat_data["tasks"]["target"].cancel()
+
     async def vtarget_loop():
         while True:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{user} {custom_text}")
             await asyncio.sleep(1.5)
+            
     task = asyncio.create_task(vtarget_loop())
     chat_data["tasks"]["target"] = task
     await update.message.reply_text(f"🎯 Custom targeting engaged on {user}.")
@@ -283,16 +307,25 @@ async def cmd_stoptarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_data["tasks"]["target"].cancel()
         del chat_data["tasks"]["target"]
         await update.message.reply_text("🛑 Targeting disarmed.")
+    else:
+        await update.message.reply_text("⚠️ No active targeting loop.")
 
 async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     text = " ".join(update.message.text.split()[1:])
-    if not text: return await update.message.reply_text("Usage: +spam <text>")
+    if not text: return await update.message.reply_text("Usage: `+spam <text>`", parse_mode="Markdown")
     chat_data = get_chat_data(update.effective_chat.id)
+    
+    if "spam" in chat_data["tasks"]:
+        chat_data["tasks"]["spam"].cancel()
+
     async def spam_loop():
         while True:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+            try:
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+            except Exception: pass
             await asyncio.sleep(0.4)
+            
     task = asyncio.create_task(spam_loop())
     chat_data["tasks"]["spam"] = task
     await update.message.reply_text("🚀 High-speed spam initialized.")
@@ -302,17 +335,24 @@ async def cmd_stopspam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "spam" in chat_data["tasks"]:
         chat_data["tasks"]["spam"].cancel()
         del chat_data["tasks"]["spam"]
-        await update.message.reply_text("🛑 Active spam terminated.")
+        await update.message.reply_text("🛑 Active spam terminated successfully.")
+    else:
+        await update.message.reply_text("⚠️ No active spam loop running.")
 
 async def cmd_flood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
     user = args[0] if args else "@target"
     chat_data = get_chat_data(update.effective_chat.id)
+    
+    if "flood" in chat_data["tasks"]:
+        chat_data["tasks"]["flood"].cancel()
+
     async def flood_loop():
         while True:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🌊 FLOODING {user} ⚡")
             await asyncio.sleep(0.3)
+            
     task = asyncio.create_task(flood_loop())
     chat_data["tasks"]["flood"] = task
     await update.message.reply_text("🌊 Flood active.")
@@ -323,10 +363,15 @@ async def cmd_vflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(args) < 2: return await update.message.reply_text("Usage: `+vflood <user> <text>`", parse_mode="Markdown")
     user, text = args[0], " ".join(args[1:])
     chat_data = get_chat_data(update.effective_chat.id)
+    
+    if "flood" in chat_data["tasks"]:
+        chat_data["tasks"]["flood"].cancel()
+
     async def vflood_loop():
         while True:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🌊 {user} {text}")
             await asyncio.sleep(0.3)
+            
     task = asyncio.create_task(vflood_loop())
     chat_data["tasks"]["flood"] = task
     await update.message.reply_text("🌊 Custom flood active.")
@@ -337,6 +382,8 @@ async def cmd_stopflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_data["tasks"]["flood"].cancel()
         del chat_data["tasks"]["flood"]
         await update.message.reply_text("🛑 Flood stopped.")
+    else:
+        await update.message.reply_text("⚠️ No active flood loop.")
 
 async def cmd_gcpfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -344,11 +391,16 @@ async def cmd_gcpfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not reply or not reply.photo: return await update.message.reply_text("Reply to an image.")
     file_id = reply.photo[-1].file_id
     chat_data = get_chat_data(update.effective_chat.id)
+    
+    if "gcpfp" in chat_data["tasks"]:
+        chat_data["tasks"]["gcpfp"].cancel()
+
     async def photo_loop():
         while True:
             try: await context.bot.set_chat_photo(chat_id=update.effective_chat.id, photo=file_id)
             except Exception: pass
             await asyncio.sleep(5)
+            
     task = asyncio.create_task(photo_loop())
     chat_data["tasks"]["gcpfp"] = task
     await update.message.reply_text("🖼️ Photo loop engaged.")
@@ -369,10 +421,15 @@ async def cmd_voiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not reply or not (reply.voice or reply.audio): return await update.message.reply_text("Reply to audio/voice.")
     file_id = (reply.voice or reply.audio).file_id
     chat_data = get_chat_data(update.effective_chat.id)
+    
+    if "voiceflood" in chat_data["tasks"]:
+        chat_data["tasks"]["voiceflood"].cancel()
+
     async def voice_loop():
         while True:
             await context.bot.send_voice(chat_id=update.effective_chat.id, voice=file_id)
             await asyncio.sleep(1)
+            
     task = asyncio.create_task(voice_loop())
     chat_data["tasks"]["voiceflood"] = task
     await update.message.reply_text("🎤 Voice flood active.")
@@ -462,13 +519,28 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_togglereact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     chat_data["togglereact"] = not chat_data["togglereact"]
-    await update.message.reply_text(f"🎭 Auto-reaction (🤣): `{chat_data['togglereact']}`", parse_mode="Markdown")
+    state = "ENABLED 🟢" if chat_data["togglereact"] else "DISABLED 🔴"
+    await update.message.reply_text(f"🎭 **Auto-Reaction (🤣):** `{state}`", parse_mode="Markdown")
 
 async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
     chat_data = get_chat_data(update.effective_chat.id)
-    for task in chat_data["tasks"].values(): task.cancel()
+    
+    # 1. Cancel all background running tasks (spam, gcnc, target, etc.)
+    task_count = len(chat_data["tasks"])
+    for key, task in list(chat_data["tasks"].items()):
+        task.cancel()
     chat_data["tasks"].clear()
-    await update.message.reply_text("🚨 EMERGENCY KILL SWITCH ENGAGED! All threads stopped.")
+
+    # 2. Reset all passive traps & auto-react
+    chat_data["togglereact"] = False
+    chat_data["muted"].clear()
+    chat_data["stripmedia"].clear()
+    chat_data["autoreply"].clear()
+    chat_data["reptts"].clear()
+    chat_data["pfpstripper"] = False
+
+    await update.message.reply_text(f"🚨 **MASTER KILL SWITCH EXECUTED!**\n• Stopped `{task_count}` Active Loops\n• Auto-Reaction & Traps Resetted to OFF.", parse_mode="Markdown")
 
 # --- Blackout & Tools ---
 
@@ -489,8 +561,10 @@ async def cmd_getid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"🆔 User ID: `{target.id}`\n💬 Chat ID: `{update.effective_chat.id}`", parse_mode="Markdown")
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    tasks = len(get_chat_data(update.effective_chat.id)["tasks"])
-    await update.message.reply_text(f"⚙️ **CLUSTER STATE:** Active\n🔥 Running Threads in Chat: `{tasks}`", parse_mode="Markdown")
+    chat_data = get_chat_data(update.effective_chat.id)
+    tasks = len(chat_data["tasks"])
+    react_status = "ON 🤣" if chat_data["togglereact"] else "OFF"
+    await update.message.reply_text(f"⚙️ **CLUSTER STATE:** Active\n🔥 Active Tasks: `{tasks}`\n🎭 Auto-React: `{react_status}`", parse_mode="Markdown")
 
 async def cmd_omg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -615,7 +689,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     chat_id = update.effective_chat.id
     chat_data = get_chat_data(chat_id)
 
-    # Auto Mute & Media Stripper Traps
+    # 1. Auto Mute & Media Stripper Traps
     if user_id in GBANNED_USERS or user_id in chat_data["muted"]:
         try: return await update.message.delete()
         except Exception: pass
@@ -627,16 +701,18 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     if user_id in chat_data["autoreply"]:
         await update.message.reply_text(chat_data["autoreply"][user_id])
 
-    # Auto Reaction Engine (Only 🤣 Emoji)
+    # 2. Auto Reaction Engine (Fixed with ReactionTypeEmoji array)
     if chat_data.get("togglereact", False):
         try:
             await context.bot.set_message_reaction(
                 chat_id=chat_id,
                 message_id=update.message.message_id,
-                reaction="🤣"
+                reaction=[ReactionTypeEmoji(emoji="🤣")]
             )
-        except Exception: pass
+        except Exception as e:
+            logging.error(f"Reaction Failed: {e}")
 
+    # 3. Command Route Router
     text = update.message.text.strip() if update.message.text else ""
     if not text.startswith("+"): return
 
