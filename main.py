@@ -3,8 +3,7 @@ import time
 import random
 import asyncio
 import logging
-from gtts import gTTS
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReactionTypeEmoji
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, MessageHandler, 
     CallbackQueryHandler, filters, ContextTypes
@@ -12,7 +11,6 @@ from telegram.ext import (
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# Global Configuration & Security Protocol
 OWNER_ID = int(os.environ.get("OWNER_ID", "123456789"))
 AUTHORIZED_ADMINS = set([OWNER_ID])
 GBANNED_USERS = set()
@@ -31,31 +29,17 @@ ROASTS_HI = [
     "Tere dimaag me memory card lagane ki jagah hai, par software hi missing hai!"
 ]
 
-ROASTS_ENG = [
-    "You bring everyone so much joy... when you leave the room!",
-    "I'd agree with you, but then we'd both be wrong.",
-    "Your secrets are always safe with me. I never even listen when you tell me.",
-    "You have an entire room to yourself inside your own head.",
-    "I'm not saying I hate you, but if you were on fire, I'd consider getting marshmallows."
-]
-
 def get_chat_data(chat_id):
     if chat_id not in CHAT_TASKS:
         CHAT_TASKS[chat_id] = {
             "tasks": {},
             "muted": set(),
-            "stripmedia": set(),
-            "pfpstripper": False,
-            "autoreply": {},
-            "reptts": set(),
             "togglereact": False
         }
     return CHAT_TASKS[chat_id]
 
 def is_admin(user_id):
     return user_id in AUTHORIZED_ADMINS or user_id == OWNER_ID
-
-# --- Dynamic 5-Page UI Navigation Matrix ---
 
 def get_menu_keyboard(page: int):
     if page == 1:
@@ -85,42 +69,32 @@ def get_menu_text(page: int):
             "━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
             "⚙️ **OPERATIONAL STATUS:** Active & Synchronized\n"
             "🛡️ **SECURITY ACCESS:** Authorized Level\n\n"
-            "Select a command module below to inspect system features and tactical usage."
+            "Select a command module below to inspect system features."
         )
     elif page == 2:
         return (
             "⚔️ **COMBAT & WARFARE**\n"
             "────────────────────────────\n"
-            "• `+gcnc <name>` — High-speed title loop (0.5s)\n"
-            "• `+vgcnc <Title 1 | Title 2>` — Fast title rotator (0.5s)\n"
-            "• `+stopgcnc` — Halt active title loop\n"
+            "• `+gcnc <name>` — High-speed title loop\n"
+            "• `+stopgcnc` — Halt title loop\n"
             "• `+target <user>` — Mention loop\n"
-            "• `+vtarget <user> <text>` — Custom mention loop\n"
-            "• `+stoptarget` — Disarm targeting loop\n"
-            "• `+spam <text>` — Synchronized high-speed spam\n"
-            "• `+stopspam` — Terminate active spam\n"
-            "• `+flood <user>` — Mention flood\n"
-            "• `+vflood <user> <text>` — Custom mention flood\n"
-            "• `+stopflood` — Stop mention flood"
+            "• `+stoptarget` — Disarm targeting\n"
+            "• `+spam <text>` — High-speed spam\n"
+            "• `+stopspam` — Terminate spam"
         )
     elif page == 3:
         return (
             "⛓️ **TRAPS & TARGETING** 🎯\n"
             "────────────────────────────\n"
-            "• `+mute <user>` — Shadow-mute target\n"
-            "• `+unmute <user>` — Unmute target\n"
-            "• `+autoreply <user>` — Auto-reply trap\n"
-            "• `+togglereact` — Toggle Real 🤣 Reaction (Owner/Admins)\n"
+            "• `+togglereact` — Toggle Real 🤣 Reaction\n"
             "• `+stopall` — Master Kill Switch"
         )
     elif page == 4:
         return (
             "🛠️ **BLACKOUT & TOOLS**\n"
             "────────────────────────────\n"
-            "• `+scan` — Deep Group matrix scanner\n"
             "• `+ping` — Inspect latency\n"
             "• `+getid` — Fetch numeric ID\n"
-            "• `+tts <text>` — Voice synthesis\n"
             "• `+roasthi <user>` — Hindi roast"
         )
     elif page == 5:
@@ -128,12 +102,8 @@ def get_menu_text(page: int):
         return (
             "👑 **OWNER CONTROLS**\n"
             "────────────────────────────\n"
-            "• `+broadcast <text>` — Network broadcast\n"
-            "• `+gban <user>` — Global blacklist\n\n"
             f"⚡ **Active Admins:**\n{admin_list}"
         )
-
-# --- Callback Matrix Handler ---
 
 async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -147,7 +117,7 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
             [InlineKeyboardButton("Abort All Active Tasks 🚨", callback_data="stop_all")],
             [InlineKeyboardButton("✝️ Return to Main Menu", callback_data="menu_1")]
         ]
-        return await query.edit_message_text("🎛️ **BATTLE-DECK CONTROL PANEL:**\nDirect chat override active.", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+        return await query.edit_message_text("🎛️ **CONTROL PANEL:** Active.", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
     elif data == "stop_all":
         chat_data = get_chat_data(query.message.chat_id)
         for task in chat_data["tasks"].values(): 
@@ -158,8 +128,6 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     elif data.startswith("menu_"):
         page = int(data.split("_")[1])
         await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page), parse_mode="Markdown")
-
-# --- Commands ---
 
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -273,8 +241,6 @@ async def cmd_roasthi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     roast_text = random.choice(ROASTS_HI)
     await update.message.reply_text(f"🔥 {target_name} {roast_text}" if target_name else f"🔥 {roast_text}")
 
-# --- Global Message & Auto-Reaction Router ---
-
 async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.from_user: return
     user_id = update.message.from_user.id
@@ -282,20 +248,17 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     chat_data = get_chat_data(chat_id)
     text = update.message.text.strip() if update.message.text else ""
 
-    # Don't react to bot's own messages or commands
     if not update.message.from_user.is_bot and not text.startswith("+"):
-        # Real Telegram Emoji Reaction (Only for Owner & Authorized Admins)
         if chat_data.get("togglereact", False) and is_admin(user_id):
             try:
                 await context.bot.set_message_reaction(
                     chat_id=chat_id,
                     message_id=update.message.message_id,
-                    reaction=[ReactionTypeEmoji(emoji='🤣')]
+                    reaction="🤣"
                 )
             except Exception as e:
                 logging.error(f"Error setting reaction: {e}")
 
-    # 2. Command Execution Router
     if text.startswith("+"):
         cmd = text.split()[0][1:].lower()
         routes = {
