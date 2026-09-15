@@ -1,5 +1,6 @@
 import os
 import time
+import random
 import asyncio
 import logging
 from gtts import gTTS
@@ -17,6 +18,45 @@ AUTHORIZED_ADMINS = set([OWNER_ID])
 GBANNED_USERS = set()
 CHAT_TASKS = {}
 
+# Dynamic High-Class Roast Database
+ROASTS_HI = [
+    "Teri shakal dekh ke Telegram ka server bhi crash ho jaye!",
+    "Itna dimaag agar sahi jagah lagaya hota toh aaj NASA me hota, yahan bakchodi nahi kar raha hota!",
+    "Tujhe dekh kar toh Google bhi bolta hai: 'Search Not Found'!",
+    "Teri baaten sun kar mera battery percentage bhi drop ho gaya!",
+    "Bhai tu paida hua tha ya kisi ne galti se spawn kar diya?",
+    "Tere se zyada fast toh BSNL ka internet chalta hai!",
+    "Tu akela aisa insaan hai jise dekh ke Wi-Fi ke signal bhi weak ho jaate hain!",
+    "Bolne se pehle soch liya kar, waise sochne ke liye dimaag lagta hai jo tere paas hai nahi!",
+    "Tera dimaag airplane mode par rehta hai kya hamesha?",
+    "Tere dimaag me memory card lagane ki jagah hai, par software hi missing hai!",
+    "Tujhse baat karke lagta hai jaise kisi 2G network par video call kar raha hoon!",
+    "Tujhe dekh ke lagta hai God ne creation ke waqt 'Ctrl+Z' dabana bhool gaya!",
+    "Tere logic sun ke toh AI bhi bol de 'System Crash, Rebooting'!",
+    "Tera attitude dekh ke lagta hai jaise tu nahi, pura server tere baap ka hai!",
+    "Tu bas DP badal, baaki aukat aur dimaag toh purane model ka hi rehna hai!",
+    "Teri baaton me itna lag hai ki reply sunne ke liye next birthday ka wait karna padta hai!"
+]
+
+ROASTS_ENG = [
+    "You bring everyone so much joy... when you leave the room!",
+    "I'd agree with you, but then we'd both be wrong.",
+    "Your secrets are always safe with me. I never even listen when you tell me.",
+    "You have an entire room to yourself inside your own head.",
+    "I'm not saying I hate you, but if you were on fire, I'd consider getting marshmallows.",
+    "You're proof that even mistakes can be persistent.",
+    "Somewhere out there, a tree is working hard to replace the oxygen you waste. Go apologize to it.",
+    "Your brain is like the 404 error page—permanently missing content.",
+    "You're the reason the gene pool desperately needs a lifeguard.",
+    "I’m not insulting you, I’m just giving you a descriptive accurate feedback of reality.",
+    "Your processing speed makes 90s dial-up internet look like quantum computing.",
+    "If I had a dollar for every smart thing you said, I’d be broke.",
+    "You're like a cloud—when you disappear, it turns into a beautiful sunny day.",
+    "I'd explain it to you, but I don't have the time or the crayons to draw it out.",
+    "You have an entire lifetime to be a fool, why not take today off?",
+    "You bring so much peace to this chat... every time you go offline."
+]
+
 def get_chat_data(chat_id):
     if chat_id not in CHAT_TASKS:
         CHAT_TASKS[chat_id] = {
@@ -33,7 +73,7 @@ def get_chat_data(chat_id):
 def is_admin(user_id):
     return user_id in AUTHORIZED_ADMINS or user_id == OWNER_ID
 
-# --- 5-PAGE DYNAMIC UI NAVIGATION MATRIX ---
+# --- Dynamic 5-Page UI Navigation Matrix ---
 
 def get_menu_keyboard(page: int):
     if page == 1:
@@ -70,14 +110,14 @@ def get_menu_text(page: int):
             "⚔️ **COMBAT & WARFARE**\n"
             "────────────────────────────\n"
             "• `+gcnc <name>` — Coordinated title loop\n"
-            "• `+vgcnc [spd] <Title 1 | Title 2>` — Title rotator (1.5s-2.0s safe)\n"
+            "• `+vgcnc [spd] <Title 1 | Title 2>` — Title rotator\n"
             "• `+stopgcnc` — Halt active title loop\n"
-            "• `+target <user>` — Mention loop (templates)\n"
+            "• `+target <user>` — Mention loop\n"
             "• `+vtarget <user> <text>` — Custom mention loop\n"
             "• `+stoptarget [user]` — Disarm targeting loop\n"
             "• `+spam <text>` — Synchronized high-speed spam\n"
             "• `+stopspam` — Terminate active spam\n"
-            "• `+flood <user>` — Mention flood (templates)\n"
+            "• `+flood <user>` — Mention flood\n"
             "• `+vflood <user> <text>` — Custom mention flood\n"
             "• `+stopflood [user]` — Stop mention flood\n"
             "• `+gcpfp` — Group photo loop (reply to image)\n"
@@ -97,10 +137,10 @@ def get_menu_text(page: int):
             "• `+stripmedia <user>` — Auto-delete target media\n"
             "• `+stopstripmedia` — Disable media stripper\n"
             "• `+pfpstripper on/off` — Auto-delete chat photo updates\n"
-            "• `+autoreply <user>` — Auto-reply trap (templates)\n"
+            "• `+autoreply <user>` — Auto-reply trap\n"
             "• `+vautoreply <user> <msg>` — Custom auto-reply trap\n"
             "• `+stopautoreply` — Disarm text auto-reply\n"
-            "• `+reptts <user>` — Voice trap (reply to voice)\n"
+            "• `+reptts <user>` — Voice trap\n"
             "• `+stopreptts` — Disarm voice trap\n"
             "• `+clean [count]` — Purge recent messages\n"
             "• `+togglereact` — Toggle emoji auto-reactions\n"
@@ -111,10 +151,10 @@ def get_menu_text(page: int):
             "🛠️ **BLACKOUT & TOOLS**\n"
             "────────────────────────────\n"
             "• `+scan` — Deep Group matrix & admin scanner\n"
-            "• `+ping` — Inspect all 10 nodes latency in 1 message\n"
+            "• `+ping` — Inspect all 10 nodes latency\n"
             "• `+getid` — Fetch numeric Telegram ID\n"
-            "• `+status` — View active cluster state in chat\n"
-            "• `+omg` — Extract & save view-once media directly to Saved Messages\n"
+            "• `+status` — View active cluster state\n"
+            "• `+omg` — Save view-once media directly to PM\n"
             "• `+tts <text>` — Speech synthesis generator\n"
             "• `+ttsedits` — View supported TTS language codes\n"
             "• `+roasthi <user>` — Automated Hindi roast\n"
@@ -125,17 +165,17 @@ def get_menu_text(page: int):
         return (
             "👑 **OWNER CONTROLS**\n"
             "────────────────────────────\n"
-            "• `+cluster` — All Live node telemetry & health\n"
+            "• `+cluster` — Live node telemetry & health\n"
             "• `+broadcast <text>` — Network-wide broadcast\n"
             "• `+slayinpowergifted <id>` — Authorize admin ID\n"
             "• `+slayinpowertaken <id>` — Revoke admin ID\n"
-            "• `+slayinfor` — List authorized admins with details\n"
-            "• `+gban <user>` — Global blacklist across all chats\n"
+            "• `+slayinfor` — List authorized admins\n"
+            "• `+gban <user>` — Global blacklist across chats\n"
             "• `+ungban <user>` — Remove from global blacklist\n\n"
             f"⚡ **Active Admins:**\n{admin_list}"
         )
 
-# --- CALLBACK MATRIX HANDLER ---
+# --- Callback Matrix Handler ---
 
 async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -159,7 +199,7 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         page = int(data.split("_")[1])
         await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page), parse_mode="Markdown")
 
-# --- COMBAT HANDLERS ---
+# --- Combat Handlers ---
 
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -198,7 +238,7 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await asyncio.sleep(1.5)
     task = asyncio.create_task(vgcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await update.message.reply_text("⚡ Title Rotator engaged (1.5s stability limit).")
+    await update.message.reply_text("⚡ Title Rotator engaged.")
 
 async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
@@ -344,7 +384,7 @@ async def cmd_stopvoiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE)
         del chat_data["tasks"]["voiceflood"]
         await update.message.reply_text("🛑 Voice flood stopped.")
 
-# --- TRAPS & TARGETING HANDLERS ---
+# --- Traps & Targeting Handlers ---
 
 async def cmd_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -430,7 +470,7 @@ async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data["tasks"].clear()
     await update.message.reply_text("🚨 EMERGENCY KILL SWITCH ENGAGED! All threads stopped.")
 
-# --- BLACKOUT & TOOLS ---
+# --- Blackout & Tools ---
 
 async def cmd_scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
@@ -487,15 +527,41 @@ async def cmd_tts(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_ttsedits(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🗣️ **TTS LANGUAGES:** `hi` (Hindi), `en` (English), `es` (Spanish), `ar` (Arabic)", parse_mode="Markdown")
 
+# --- Dynamic Targeted Roast Handlers ---
+
 async def cmd_roasthi(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message.reply_to_message: return await update.message.reply_text("Reply to target user.")
-    await update.message.reply_text("🔥 Teri shakal dekh ke Telegram ka server bhi crash ho jaye!")
+    args = update.message.text.split()[1:]
+    target_name = None
+    
+    if update.message.reply_to_message and update.message.reply_to_message.from_user:
+        target_name = f"@{update.message.reply_to_message.from_user.username}" if update.message.reply_to_message.from_user.username else update.message.reply_to_message.from_user.first_name
+    elif args:
+        target_name = " ".join(args)
+        
+    roast_text = random.choice(ROASTS_HI)
+    
+    if target_name:
+        await update.message.reply_text(f"🔥 {target_name} {roast_text}")
+    else:
+        await update.message.reply_text(f"🔥 {roast_text}")
 
 async def cmd_roasteng(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message.reply_to_message: return await update.message.reply_text("Reply to target user.")
-    await update.message.reply_text("🔥 You bring everyone so much joy... when you leave the room!")
+    args = update.message.text.split()[1:]
+    target_name = None
+    
+    if update.message.reply_to_message and update.message.reply_to_message.from_user:
+        target_name = f"@{update.message.reply_to_message.from_user.username}" if update.message.reply_to_message.from_user.username else update.message.reply_to_message.from_user.first_name
+    elif args:
+        target_name = " ".join(args)
+        
+    roast_text = random.choice(ROASTS_ENG)
+    
+    if target_name:
+        await update.message.reply_text(f"🔥 {target_name} {roast_text}")
+    else:
+        await update.message.reply_text(f"🔥 {roast_text}")
 
-# --- OWNER CONTROLS ---
+# --- Owner Controls ---
 
 async def cmd_cluster(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
@@ -541,7 +607,7 @@ async def cmd_ungban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     GBANNED_USERS.discard(target_id)
     await update.message.reply_text(f"✅ Target `{target_id}` removed from blacklist.", parse_mode="Markdown")
 
-# --- MASTER ROUTER & AUTOMATED ENFORCER ---
+# --- Master Router & Automated Enforcer ---
 
 async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.from_user: return
