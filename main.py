@@ -26,12 +26,15 @@ AUTHORIZED_ADMINS = set([8821066459, OWNER_ID])
 GBANNED_USERS = set()
 CHAT_TASKS = {}
 
-# Global Reaction State across all bot instances for synchronized reactions
+# Global Cluster Instances Storage
+BOT_INSTANCES = []
+
+# Global Reaction State across all bot instances
 GLOBAL_CHAT_REACT_MODE = {}
 
 REACTION_EMOJI = "🤣"
 
-# Commands exclusive ONLY to Main Bot (@krishslayin1_bot)
+# Commands exclusive ONLY to Main Bot
 MAIN_BOT_ONLY_COMMANDS = {
     "menu", "start", "panel", "mute", "unmute", "mutelist", 
     "gban", "ungban", "slayinpowergifted", "slayinpowertaken"
@@ -39,7 +42,7 @@ MAIN_BOT_ONLY_COMMANDS = {
 
 AUTOREPLY_LINES = [
     r"""बड़े दुःख के साथ हँसना पढ़ रहा है😂  𝐓ᴜ तेरी माँ रंडी 🤍😅🔥""",
-    r"""𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯 😂👯😂👯😂👯 😂👯😂👯😂👯""",
+    r"""𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯 😂👯😂👯😂👯 😂👯😂👯😂👯""",
     r"""𝙏𝙀𝙍𝙄 𝙈𝘼 𝑑𝙄𝘿🇭🇻𝘼 𝙋𝙀𝙉𝙎𝙄𝙊𝙉 𝙆𝙃𝘼𝙉𝙀 𝙒𝘼𝙇𝙄 𝙍𝙉𝘿𝙄 🤣""",
     r"""तेरी maa की chut में ऐसा HACK lgaunga Light की speed में बच्चे देगी""",
     r"""𝑩𝑯𝑨𝑮 𝑹𝑨𝑵𝑫𝒀𝑲𝑬 𝑻𝑬𝑹𝑰 𝑴𝑨 𝑪𝑯𝑼𝑫𝑹𝑰 𝑯𝑨𝑰 ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️""",
@@ -90,6 +93,26 @@ async def send_log(context: ContextTypes.DEFAULT_TYPE, text: str):
         except Exception as e:
             logging.error(f"Failed to send log: {e}")
 
+# --- Universal Reset & Absolute Stop ---
+
+async def hard_stop_all(chat_id: int, context: ContextTypes.DEFAULT_TYPE, user_id: int):
+    chat_data = get_chat_data(chat_id)
+    
+    # Cancel all active asynchronous loop tasks across all bots
+    for task_name, task in list(chat_data["tasks"].items()):
+        task.cancel()
+    chat_data["tasks"].clear()
+
+    # Disarm all targeting traps
+    chat_data["muted"].clear()
+    chat_data["stripmedia"].clear()
+    chat_data["autoreply"].clear()
+    chat_data["reptts"].clear()
+    chat_data["pfpstripper"] = False
+    GLOBAL_CHAT_REACT_MODE[chat_id] = None
+
+    await send_log(context, f"🚨 *ABSOLUTE KILL SWITCH TRIGGERED*\nChat: `{chat_id}`\nAdmin/User: `{user_id}`")
+
 # --- UI Helpers ---
 
 def get_menu_keyboard(page: int):
@@ -132,8 +155,8 @@ def get_menu_text(page: int):
             "• +target <user> — Mention loop\n"
             "• +vtarget <user> <text> — Custom mention loop\n"
             "• +stoptarget — Disarm targeting loop\n"
-            "• +spam <text> — High-speed spam\n"
-            "• +stopspam — Terminate active spam\n"
+            "• +spam <text> — Multi-bot high-speed spam\n"
+            "• +stopspam — EMERGENCY KILL-SWITCH (STOPS EVERYTHING)\n"
             "• +flood <user> — Mention flood\n"
             "• +vflood <user> <text> — Custom mention flood\n"
             "• +stopflood — Stop mention flood\n"
@@ -191,24 +214,6 @@ def get_menu_text(page: int):
             f"⚡ Active Admins:\n{admin_list}"
         )
 
-# --- Universal Reset ---
-
-async def hard_stop_all(chat_id: int, context: ContextTypes.DEFAULT_TYPE, user_id: int):
-    chat_data = get_chat_data(chat_id)
-    
-    for task_name, task in list(chat_data["tasks"].items()):
-        task.cancel()
-    chat_data["tasks"].clear()
-
-    chat_data["muted"].clear()
-    chat_data["stripmedia"].clear()
-    chat_data["autoreply"].clear()
-    chat_data["reptts"].clear()
-    chat_data["pfpstripper"] = False
-    GLOBAL_CHAT_REACT_MODE[chat_id] = None
-
-    await send_log(context, f"🚨 *ABSOLUTE KILL SWITCH TRIGGERED*\nChat: `{chat_id}`\nAdmin/User: `{user_id}`")
-
 # --- Callbacks ---
 
 async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -231,13 +236,12 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         page = int(data.split("_")[1])
         await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page), parse_mode="Markdown")
 
-# --- Commands ---
+# --- Multi-Bot Cluster Combat Commands ---
 
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
-    
-    speed = 0.3  # Default speed
+    speed = 0.3
     name = "KRISHSLAYIN"
 
     if args:
@@ -250,30 +254,30 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcnc" in chat_data["tasks"]: chat_data["tasks"]["gcnc"].cancel()
 
-    async def gcnc_loop():
+    async def multi_gcnc_loop():
         titles = [f"⚡ {name} ⚡", f"🔥 {name} 🔥", f"👑 {name} 👑"]
-        idx = 0
+        title_idx = 0
+        bot_idx = 0
+        total_bots = len(BOT_INSTANCES)
         while True:
+            current_bot = BOT_INSTANCES[bot_idx % total_bots]
             try:
-                await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
-                idx += 1
-            except Exception: 
-                pass
+                await current_bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[title_idx % len(titles)])
+                title_idx += 1
+            except Exception: pass
+            bot_idx += 1
             await asyncio.sleep(speed)
 
-    task = asyncio.create_task(gcnc_loop())
+    task = asyncio.create_task(multi_gcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    
-    bot_username = (await context.bot.get_me()).username.lower()
-    if MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚔️ High-Speed Title loop activated (Speed: {speed}s).")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚔️ All {len(BOT_INSTANCES)} Cluster Bots engaged in GCNC Loop (Speed: {speed}s).")
 
 async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     raw_text = update.message.text.replace("+vgcnc", "").strip()
     parts = raw_text.split(" ", 1)
     
-    speed = 0.3  # Default Speed
+    speed = 0.3
     titles_raw = ""
 
     if len(parts) > 0:
@@ -284,40 +288,63 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
             titles_raw = raw_text
 
     titles = [t.strip() for t in titles_raw.split("|") if t.strip()]
-    if not titles: 
-        bot_username = (await context.bot.get_me()).username.lower()
-        if MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME:
-            return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +vgcnc <speed> Title 1 | Title 2")
-        return
+    if not titles: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +vgcnc [speed] Title 1 | Title 2")
 
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcnc" in chat_data["tasks"]: chat_data["tasks"]["gcnc"].cancel()
 
-    async def vgcnc_loop():
-        idx = 0
+    async def multi_vgcnc_loop():
+        title_idx = 0
+        bot_idx = 0
+        total_bots = len(BOT_INSTANCES)
         while True:
+            current_bot = BOT_INSTANCES[bot_idx % total_bots]
             try:
-                await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
-                idx += 1
-            except Exception: 
-                pass
+                await current_bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[title_idx % len(titles)])
+                title_idx += 1
+            except Exception: pass
+            bot_idx += 1
             await asyncio.sleep(speed)
 
-    task = asyncio.create_task(vgcnc_loop())
+    task = asyncio.create_task(multi_vgcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-
-    bot_username = (await context.bot.get_me()).username.lower()
-    if MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚡ Title Rotator engaged (Speed: {speed}s).")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚡ All {len(BOT_INSTANCES)} Cluster Bots engaged in VGCNC Rotator (Speed: {speed}s).")
 
 async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcnc" in chat_data["tasks"]:
         chat_data["tasks"]["gcnc"].cancel()
         del chat_data["tasks"]["gcnc"]
-        bot_username = (await context.bot.get_me()).username.lower()
-        if MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Title loop disarmed.")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Title loop disarmed across all cluster bots.")
+
+async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    text = " ".join(update.message.text.split()[1:])
+    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +spam <text>")
+    chat_data = get_chat_data(update.effective_chat.id)
+    if "spam" in chat_data["tasks"]: chat_data["tasks"]["spam"].cancel()
+
+    async def multi_spam_loop():
+        bot_idx = 0
+        total_bots = len(BOT_INSTANCES)
+        while True:
+            current_bot = BOT_INSTANCES[bot_idx % total_bots]
+            try: await current_bot.send_message(chat_id=update.effective_chat.id, text=text)
+            except Exception: pass
+            bot_idx += 1
+            await asyncio.sleep(0.12)
+
+    task = asyncio.create_task(multi_spam_loop())
+    chat_data["tasks"]["spam"] = task
+
+# STRICT KILL-SWITCH: +stopspam STOPS EVERYTHING IN CHAT
+async def cmd_stopspam(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    await hard_stop_all(update.effective_chat.id, context, update.effective_user.id)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, 
+        text="🛑 STRICT EMERGENCY STOP: All active tasks, spam, GCNC, traps, and loops have been KILLED instantly!"
+    )
 
 async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -326,12 +353,18 @@ async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     if "target" in chat_data["tasks"]: chat_data["tasks"]["target"].cancel()
 
-    async def target_loop():
+    async def multi_target_loop():
+        bot_idx = 0
+        total_bots = len(BOT_INSTANCES)
         while True:
+            current_bot = BOT_INSTANCES[bot_idx % total_bots]
             line = random.choice(TARGET_LINES)
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{user}\n{line}")
-            await asyncio.sleep(0.3)
-    task = asyncio.create_task(target_loop())
+            try: await current_bot.send_message(chat_id=update.effective_chat.id, text=f"{user}\n{line}")
+            except Exception: pass
+            bot_idx += 1
+            await asyncio.sleep(0.2)
+
+    task = asyncio.create_task(multi_target_loop())
     chat_data["tasks"]["target"] = task
 
 async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -342,11 +375,17 @@ async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     if "target" in chat_data["tasks"]: chat_data["tasks"]["target"].cancel()
 
-    async def vtarget_loop():
+    async def multi_vtarget_loop():
+        bot_idx = 0
+        total_bots = len(BOT_INSTANCES)
         while True:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{user} {custom_text}")
-            await asyncio.sleep(0.3)
-    task = asyncio.create_task(vtarget_loop())
+            current_bot = BOT_INSTANCES[bot_idx % total_bots]
+            try: await current_bot.send_message(chat_id=update.effective_chat.id, text=f"{user} {custom_text}")
+            except Exception: pass
+            bot_idx += 1
+            await asyncio.sleep(0.2)
+
+    task = asyncio.create_task(multi_vtarget_loop())
     chat_data["tasks"]["target"] = task
 
 async def cmd_stoptarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -356,27 +395,6 @@ async def cmd_stoptarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del chat_data["tasks"]["target"]
         await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Targeting disarmed.")
 
-async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update.effective_user.id): return
-    text = " ".join(update.message.text.split()[1:])
-    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +spam <text>")
-    chat_data = get_chat_data(update.effective_chat.id)
-    if "spam" in chat_data["tasks"]: chat_data["tasks"]["spam"].cancel()
-
-    async def spam_loop():
-        while True:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
-            await asyncio.sleep(0.15)
-    task = asyncio.create_task(spam_loop())
-    chat_data["tasks"]["spam"] = task
-
-async def cmd_stopspam(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_data = get_chat_data(update.effective_chat.id)
-    if "spam" in chat_data["tasks"]:
-        chat_data["tasks"]["spam"].cancel()
-        del chat_data["tasks"]["spam"]
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Active spam terminated.")
-
 async def cmd_flood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
@@ -384,12 +402,18 @@ async def cmd_flood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     if "flood" in chat_data["tasks"]: chat_data["tasks"]["flood"].cancel()
 
-    async def flood_loop():
+    async def multi_flood_loop():
+        bot_idx = 0
+        total_bots = len(BOT_INSTANCES)
         while True:
             for line in FLOOD_LINES:
-                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{user}\n{line}")
+                current_bot = BOT_INSTANCES[bot_idx % total_bots]
+                try: await current_bot.send_message(chat_id=update.effective_chat.id, text=f"{user}\n{line}")
+                except Exception: pass
+                bot_idx += 1
                 await asyncio.sleep(0.15)
-    task = asyncio.create_task(flood_loop())
+
+    task = asyncio.create_task(multi_flood_loop())
     chat_data["tasks"]["flood"] = task
 
 async def cmd_vflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -400,11 +424,17 @@ async def cmd_vflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     if "flood" in chat_data["tasks"]: chat_data["tasks"]["flood"].cancel()
 
-    async def vflood_loop():
+    async def multi_vflood_loop():
+        bot_idx = 0
+        total_bots = len(BOT_INSTANCES)
         while True:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🌊 {user} {text}")
+            current_bot = BOT_INSTANCES[bot_idx % total_bots]
+            try: await current_bot.send_message(chat_id=update.effective_chat.id, text=f"🌊 {user} {text}")
+            except Exception: pass
+            bot_idx += 1
             await asyncio.sleep(0.15)
-    task = asyncio.create_task(vflood_loop())
+
+    task = asyncio.create_task(multi_vflood_loop())
     chat_data["tasks"]["flood"] = task
 
 async def cmd_stopflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -422,12 +452,17 @@ async def cmd_gcpfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcpfp" in chat_data["tasks"]: chat_data["tasks"]["gcpfp"].cancel()
 
-    async def photo_loop():
+    async def multi_photo_loop():
+        bot_idx = 0
+        total_bots = len(BOT_INSTANCES)
         while True:
-            try: await context.bot.set_chat_photo(chat_id=update.effective_chat.id, photo=file_id)
+            current_bot = BOT_INSTANCES[bot_idx % total_bots]
+            try: await current_bot.set_chat_photo(chat_id=update.effective_chat.id, photo=file_id)
             except Exception: pass
-            await asyncio.sleep(4)
-    task = asyncio.create_task(photo_loop())
+            bot_idx += 1
+            await asyncio.sleep(3)
+
+    task = asyncio.create_task(multi_photo_loop())
     chat_data["tasks"]["gcpfp"] = task
 
 async def cmd_stopgcpfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -445,11 +480,17 @@ async def cmd_voiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     if "voiceflood" in chat_data["tasks"]: chat_data["tasks"]["voiceflood"].cancel()
 
-    async def voice_loop():
+    async def multi_voice_loop():
+        bot_idx = 0
+        total_bots = len(BOT_INSTANCES)
         while True:
-            await context.bot.send_voice(chat_id=update.effective_chat.id, voice=file_id)
-            await asyncio.sleep(0.3)
-    task = asyncio.create_task(voice_loop())
+            current_bot = BOT_INSTANCES[bot_idx % total_bots]
+            try: await current_bot.send_voice(chat_id=update.effective_chat.id, voice=file_id)
+            except Exception: pass
+            bot_idx += 1
+            await asyncio.sleep(0.2)
+
+    task = asyncio.create_task(multi_voice_loop())
     chat_data["tasks"]["voiceflood"] = task
 
 async def cmd_stopvoiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -458,6 +499,8 @@ async def cmd_stopvoiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE)
         chat_data["tasks"]["voiceflood"].cancel()
         del chat_data["tasks"]["voiceflood"]
         await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Voice flood stopped.")
+
+# --- Moderation & Traps Commands ---
 
 async def cmd_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -570,41 +613,31 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try: await status.delete()
     except Exception: pass
 
-# --- Universal Synchronized Reaction Handlers ---
+# --- Universal Synchronized Reactions ---
 
 async def cmd_togglereactall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     chat_id = update.effective_chat.id
     current_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
     
-    bot_username = (await context.bot.get_me()).username.lower()
-    is_main = (MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME)
-
     if current_mode == "all":
         GLOBAL_CHAT_REACT_MODE[chat_id] = None
-        if is_main:
-            await context.bot.send_message(chat_id=chat_id, text="❌ Auto-Reaction for ALL users Disabled.")
+        await context.bot.send_message(chat_id=chat_id, text="❌ Auto-Reaction for ALL users Disabled.")
     else:
         GLOBAL_CHAT_REACT_MODE[chat_id] = "all"
-        if is_main:
-            await context.bot.send_message(chat_id=chat_id, text="✅ Auto-Reaction Enabled for ALL users!")
+        await context.bot.send_message(chat_id=chat_id, text="✅ Auto-Reaction Enabled for ALL users!")
 
 async def cmd_togglereact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     chat_id = update.effective_chat.id
     current_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
 
-    bot_username = (await context.bot.get_me()).username.lower()
-    is_main = (MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME)
-
     if current_mode == "admin":
         GLOBAL_CHAT_REACT_MODE[chat_id] = None
-        if is_main:
-            await context.bot.send_message(chat_id=chat_id, text="❌ Admin Auto-Reaction Disabled.")
+        await context.bot.send_message(chat_id=chat_id, text="❌ Admin Auto-Reaction Disabled.")
     else:
         GLOBAL_CHAT_REACT_MODE[chat_id] = "admin"
-        if is_main:
-            await context.bot.send_message(chat_id=chat_id, text="✅ Auto-Reaction Enabled for OWNER & ADMINS only!")
+        await context.bot.send_message(chat_id=chat_id, text="✅ Auto-Reaction Enabled for OWNER & ADMINS only!")
 
 async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -630,7 +663,7 @@ async def cmd_getid(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tasks = len(get_chat_data(update.effective_chat.id)["tasks"])
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚙️ CLUSTER STATE: Active\n🔥 Active Tasks: {tasks}")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚙️ CLUSTER STATE: Active ({len(BOT_INSTANCES)} Bots Connected)\n🔥 Active Tasks: {tasks}")
 
 async def cmd_omg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -695,7 +728,7 @@ async def cmd_roasteng(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_cluster(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🖥️ CLUSTER HEALTH: Master Nodes Operating Efficiently.")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🖥️ CLUSTER HEALTH: {len(BOT_INSTANCES)} Master Nodes Operating Efficiently.")
 
 async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
@@ -756,7 +789,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     bot_username = (await context.bot.get_me()).username.lower()
     is_main_bot = (MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME)
 
-    # Auto Delete Owner's Trigger Message
+    # Auto Delete Owner's Command Trigger Message
     if user_id == OWNER_ID and text.startswith("+"):
         try: await update.message.delete()
         except Exception: pass
@@ -800,7 +833,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             await context.bot.send_voice(chat_id=chat_id, voice=open("reptts.mp3", "rb"))
         except Exception: pass
 
-    # Synchronized Reaction Logic across all cluster bots
+    # Synchronized Reaction Logic across cluster bots
     react_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
     if react_mode is not None and not text.startswith("+"):
         should_react = False
@@ -863,9 +896,13 @@ async def start_single_bot(token: str, bot_index: int):
     app.add_handler(CallbackQueryHandler(menu_callback_handler))
     app.add_handler(MessageHandler(filters.ALL, global_message_router))
 
-    print(f"✅ Bot #{bot_index} initialized.")
     await app.initialize()
     await app.start()
+
+    # Store active bot instance globally
+    BOT_INSTANCES.append(app.bot)
+    print(f"✅ Bot #{bot_index} (@{(await app.bot.get_me()).username}) connected to Cluster.")
+
     await app.updater.start_polling()
     await asyncio.Event().wait()
 
@@ -879,7 +916,7 @@ async def run_all_bots():
         print("❌ Error: No BOT_TOKEN found in Environment Variables!")
         return
 
-    print(f"🚀 Starting {len(tokens)} bots simultaneously...")
+    print(f"🚀 Initializing {len(tokens)} bots in Synchronized Cluster Mode...")
 
     tasks = [asyncio.create_task(start_single_bot(token, idx)) for idx, token in enumerate(tokens, start=1)]
     await asyncio.gather(*tasks)
