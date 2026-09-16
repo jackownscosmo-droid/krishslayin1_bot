@@ -18,7 +18,7 @@ from telegram.ext import (
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 # Global Configuration
-OWNER_ID = int(os.environ.get("OWNER_ID", "123456789"))
+OWNER_ID = int(os.environ.get("OWNER_ID", "8821066459"))
 MAIN_BOT_USERNAME = os.environ.get("MAIN_BOT_USERNAME", "krishslayin1_bot").lower().replace("@", "")
 LOG_CHANNEL_ID = os.environ.get("LOG_CHANNEL_ID", None)
 
@@ -39,7 +39,7 @@ MAIN_BOT_ONLY_COMMANDS = {
 
 AUTOREPLY_LINES = [
     r"""बड़े दुःख के साथ हँसना पढ़ रहा है😂  𝐓ᴜ तेरी माँ रंडी 🤍😅🔥""",
-    r"""𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯 😂👯😂👯😂👯 😂👯😂👯😂👯""",
+    r"""𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯 😂👯😂👯😂👯 😂👯😂👯😂👯""",
     r"""𝙏𝙀𝙍𝙄 𝙈𝘼 𝑑𝙄𝘿🇭🇻𝘼 𝙋𝙀𝙉𝙎𝙄𝙊𝙉 𝙆𝙃𝘼𝙉𝙀 𝙒𝘼𝙇𝙄 𝙍𝙉𝘿𝙄 🤣""",
     r"""तेरी maa की chut में ऐसा HACK lgaunga Light की speed में बच्चे देगी""",
     r"""𝑩𝑯𝑨𝑮 𝑹𝑨𝑵𝑫𝒀𝑲𝑬 𝑻𝑬𝑹𝑰 𝑴𝑨 𝑪𝑯𝑼𝑫𝑹𝑰 𝑯𝑨𝑰 ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️""",
@@ -126,7 +126,7 @@ def get_menu_text(page: int):
         return (
             "⚔️ COMBAT & WARFARE\n"
             "────────────────────────────\n"
-            "• +gcnc <name> — Coordinated title loop\n"
+            "• +gcnc [spd] <name> — Coordinated title loop\n"
             "• +vgcnc [spd] <Title 1 | Title 2> — Title rotator\n"
             "• +stopgcnc — Halt active title loop\n"
             "• +target <user> — Mention loop\n"
@@ -236,7 +236,17 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
-    name = " ".join(args) or "KRISHSLAYIN"
+    
+    speed = 0.3  # Default speed
+    name = "KRISHSLAYIN"
+
+    if args:
+        try:
+            speed = float(args[0])
+            name = " ".join(args[1:]) if len(args) > 1 else "KRISHSLAYIN"
+        except ValueError:
+            name = " ".join(args)
+
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcnc" in chat_data["tasks"]: chat_data["tasks"]["gcnc"].cancel()
 
@@ -247,19 +257,38 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
                 idx += 1
-            except Exception: pass
-            await asyncio.sleep(0.8)
+            except Exception: 
+                pass
+            await asyncio.sleep(speed)
+
     task = asyncio.create_task(gcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="⚔️ High-Speed Title loop activated.")
+    
+    bot_username = (await context.bot.get_me()).username.lower()
+    if MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚔️ High-Speed Title loop activated (Speed: {speed}s).")
 
 async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     raw_text = update.message.text.replace("+vgcnc", "").strip()
     parts = raw_text.split(" ", 1)
-    titles_raw = parts[1] if len(parts) > 1 else parts[0]
+    
+    speed = 0.3  # Default Speed
+    titles_raw = ""
+
+    if len(parts) > 0:
+        try:
+            speed = float(parts[0])
+            titles_raw = parts[1] if len(parts) > 1 else ""
+        except ValueError:
+            titles_raw = raw_text
+
     titles = [t.strip() for t in titles_raw.split("|") if t.strip()]
-    if not titles: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +vgcnc Title 1 | Title 2")
+    if not titles: 
+        bot_username = (await context.bot.get_me()).username.lower()
+        if MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME:
+            return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +vgcnc <speed> Title 1 | Title 2")
+        return
 
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcnc" in chat_data["tasks"]: chat_data["tasks"]["gcnc"].cancel()
@@ -270,18 +299,25 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
             try:
                 await context.bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[idx % len(titles)])
                 idx += 1
-            except Exception: pass
-            await asyncio.sleep(0.8)
+            except Exception: 
+                pass
+            await asyncio.sleep(speed)
+
     task = asyncio.create_task(vgcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="⚡ Title Rotator engaged.")
+
+    bot_username = (await context.bot.get_me()).username.lower()
+    if MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚡ Title Rotator engaged (Speed: {speed}s).")
 
 async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcnc" in chat_data["tasks"]:
         chat_data["tasks"]["gcnc"].cancel()
         del chat_data["tasks"]["gcnc"]
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Title loop disarmed.")
+        bot_username = (await context.bot.get_me()).username.lower()
+        if MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME:
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Title loop disarmed.")
 
 async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -541,24 +577,34 @@ async def cmd_togglereactall(update: Update, context: ContextTypes.DEFAULT_TYPE)
     chat_id = update.effective_chat.id
     current_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
     
+    bot_username = (await context.bot.get_me()).username.lower()
+    is_main = (MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME)
+
     if current_mode == "all":
         GLOBAL_CHAT_REACT_MODE[chat_id] = None
-        await context.bot.send_message(chat_id=chat_id, text="❌ Auto-Reaction for ALL users Disabled.")
+        if is_main:
+            await context.bot.send_message(chat_id=chat_id, text="❌ Auto-Reaction for ALL users Disabled.")
     else:
         GLOBAL_CHAT_REACT_MODE[chat_id] = "all"
-        await context.bot.send_message(chat_id=chat_id, text="✅ Auto-Reaction Enabled for ALL users!")
+        if is_main:
+            await context.bot.send_message(chat_id=chat_id, text="✅ Auto-Reaction Enabled for ALL users!")
 
 async def cmd_togglereact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     chat_id = update.effective_chat.id
     current_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
 
+    bot_username = (await context.bot.get_me()).username.lower()
+    is_main = (MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME)
+
     if current_mode == "admin":
         GLOBAL_CHAT_REACT_MODE[chat_id] = None
-        await context.bot.send_message(chat_id=chat_id, text="❌ Admin Auto-Reaction Disabled.")
+        if is_main:
+            await context.bot.send_message(chat_id=chat_id, text="❌ Admin Auto-Reaction Disabled.")
     else:
         GLOBAL_CHAT_REACT_MODE[chat_id] = "admin"
-        await context.bot.send_message(chat_id=chat_id, text="✅ Auto-Reaction Enabled for OWNER & ADMINS only!")
+        if is_main:
+            await context.bot.send_message(chat_id=chat_id, text="✅ Auto-Reaction Enabled for OWNER & ADMINS only!")
 
 async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
