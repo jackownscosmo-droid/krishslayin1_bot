@@ -1,5 +1,4 @@
 import os
-import io
 import time
 import random
 import asyncio
@@ -10,7 +9,7 @@ try:
 except ImportError:
     gTTS = None
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, InputFile
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
     ApplicationBuilder, MessageHandler, 
     CallbackQueryHandler, filters, ContextTypes
@@ -33,21 +32,19 @@ BOT_INSTANCES = []
 # Global Reaction State across all bot instances
 GLOBAL_CHAT_REACT_MODE = {}
 
-# User Backups for +copy and +scopy
-PROFILE_BACKUPS = {}
-
 REACTION_EMOJI = "🤣"
 
 # Commands exclusive ONLY to Main Bot
 MAIN_BOT_ONLY_COMMANDS = {
     "menu", "start", "panel", "mute", "unmute", "mutelist", 
-    "gban", "ungban", "slayinpowergifted", "slayinpowertaken"
+    "gban", "ungban", "slayinpowergifted", "slayinpowertaken",
+    "cluster", "getid"
 }
 
 AUTOREPLY_LINES = [
     r"""बड़े दुःख के साथ हँसना पढ़ रहा है😂  𝐓ᴜ तेरी माँ रंडी 🤍😅🔥""",
     r"""𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯 😂👯😂👯😂👯 😂👯😂👯😂👯""",
-    r"""𝙏𝙀𝙍𝙄 𝙈𝘼 𝑑𝙄𝘿🇭🇻𝘼 𝙋𝙀𝙉𝙎𝙄𝙊𝙉 𝙆𝙃𝘼𝙉𝙀 𝙒𝘼𝙇𝙄 𝙍𝙉𝘿𝙄 🤣""",
+    r"""𝙏𝙀𝙍𝙄 𝙈𝘼 𝑑𝙄𝘿🇭🇻𝘼 𝙋𝙀𝙉𝙎𝙄𝙊𝙉 𝙃𝘼𝙉𝙀 𝙒𝘼𝙇𝙄 𝙍𝙉𝘿𝙄 🤣""",
     r"""तेरी maa की chut में ऐसा HACK lgaunga Light की speed में बच्चे देगी""",
     r"""𝑩𝑯𝑨𝑮 𝑹𝑨𝑵𝑫𝒀𝑲𝑬 𝑻𝑬𝑹𝑰 𝑴𝑨 𝑪𝑯𝑼𝑫𝑹𝑰 𝑯𝑨𝑰 ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️""",
     r"""𝘽𝙃𝘼𝙂𝘼 𝘽𝙃𝘼𝙂𝘼 𝙆𝙀 𝙈𝘼𝙍𝙐𝙉𝙂𝘼 🤣🩷🙌🏾"""
@@ -74,6 +71,20 @@ ROASTS_ENG = [
     "You bring everyone so much joy... when you leave the room!",
     "Your brain is like the 404 error page—permanently missing content."
 ]
+
+VALID_COMMANDS = {
+    "start", "menu", "panel", "gcnc", "vgcnc", "stopgcnc",
+    "target", "vtarget", "stoptarget", "spam", "stopspam",
+    "flood", "vflood", "stopflood", "gcpfp", "stopgcpfp",
+    "voiceflood", "stopvoiceflood", "mute", "unmute", "mutelist",
+    "stripmedia", "stopstripmedia", "pfpstripper", "autoreply",
+    "vautoreply", "stopautoreply", "reptts", "stopreptts",
+    "clean", "togglereactall", "togglereact", "stopall",
+    "scan", "ping", "getid", "status", "omg", "tts",
+    "roasthi", "roasteng", "cluster", "broadcast",
+    "slayinpowergifted", "slayinpowertaken", "slayinfor",
+    "gban", "ungban"
+}
 
 def get_chat_data(chat_id):
     if chat_id not in CHAT_TASKS:
@@ -172,9 +183,6 @@ def get_menu_text(page: int):
             "⛓️ TRAPS & TARGETING 🎯\n"
             "────────────────────────────\n"
             "• +panel — Interactive inline dashboard\n"
-            "• +ht <user> — Shadow-Mute trap with pop-up alert\n"
-            "• +copy — Clone target profile\n"
-            "• +scopy — Restore original profile\n"
             "• +mute <user> — Shadow-mute target\n"
             "• +unmute <user> — Unmute target\n"
             "• +mutelist — View muted users\n"
@@ -223,13 +231,8 @@ def get_menu_text(page: int):
 
 async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    data = query.data
-
-    if data == "ht_unmute_attempt":
-        await query.answer(text="🚫 ACCESS DENIED! You are shadow-muted by System Commander.", show_alert=True)
-        return
-
     await query.answer()
+    data = query.data
     
     if data == "menu_close":
         return await query.message.delete()
@@ -287,7 +290,7 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     raw_text = update.message.text.replace("+vgcnc", "").strip()
     parts = raw_text.split(" ", 1)
     
-    speed = 0.12
+    speed = 0.3
     titles_raw = ""
 
     if len(parts) > 0:
@@ -509,86 +512,7 @@ async def cmd_stopvoiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE)
         del chat_data["tasks"]["voiceflood"]
         await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Voice flood stopped.")
 
-# --- Moderation, Cloner & Traps Commands ---
-
-async def cmd_ht(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update.effective_user.id): return
-    reply = update.message.reply_to_message
-    args = update.message.text.split()[1:]
-    
-    target_id = None
-    target_tag = "@target"
-
-    if reply and reply.from_user:
-        target_id = reply.from_user.id
-        target_tag = f"@{reply.from_user.username}" if reply.from_user.username else reply.from_user.first_name
-    elif args:
-        if args[0].isdigit():
-            target_id = int(args[0])
-            target_tag = str(target_id)
-        elif args[0].startswith("@"):
-            target_tag = args[0]
-
-    if not target_id:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target or pass User ID.")
-
-    get_chat_data(update.effective_chat.id)["muted"].add(target_id)
-
-    keyboard = InlineKeyboardMarkup([[
-        InlineKeyboardButton("🔊 Tap to Unmute Yourself", callback_data="ht_unmute_attempt")
-    ]])
-
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=f"🔇 USER SHADOW-MUTED: {target_tag}\nYour messages have been isolated by system protocol.",
-        reply_markup=keyboard
-    )
-
-async def cmd_copy(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update.effective_user.id): return
-    reply = update.message.reply_to_message
-    if not reply or not reply.from_user:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to a user to copy profile.")
-
-    target = reply.from_user
-    bot_id = context.bot.id
-
-    try:
-        # Save Original Profile state before cloning
-        if bot_id not in PROFILE_BACKUPS:
-            me = await context.bot.get_me()
-            PROFILE_BACKUPS[bot_id] = {
-                "first_name": me.first_name,
-                "last_name": me.last_name or ""
-            }
-
-        # Fetch Target Photos
-        photos = await context.bot.get_user_profile_photos(user_id=target.id, limit=1)
-        if photos.photos:
-            file_id = photos.photos[0][-1].file_id
-            file = await context.bot.get_file(file_id)
-            photo_bytes = await file.download_as_bytearray()
-            await context.bot.set_chat_photo(chat_id=update.effective_chat.id, photo=bytes(photo_bytes))
-
-        # Copy Name
-        await context.bot.set_my_name(name=f"{target.first_name} {target.last_name or ''}".strip())
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"👤 Identity cloned from {target.first_name}.")
-    except Exception as e:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Copy Error: {str(e)}")
-
-async def cmd_scopy(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update.effective_user.id): return
-    bot_id = context.bot.id
-    backup = PROFILE_BACKUPS.get(bot_id)
-
-    if not backup:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ No identity backup found.")
-
-    try:
-        await context.bot.set_my_name(name=backup["first_name"])
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="🔄 Bot identity restored to original configuration.")
-    except Exception as e:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Restore Error: {str(e)}")
+# --- Moderation & Traps Commands ---
 
 async def cmd_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -739,12 +663,13 @@ async def cmd_scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     members = await chat.get_member_count()
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"📊 CHAT MATRIX SCAN:\n• Title: {chat.title}\n• ID: {chat.id}\n• Members: {members}")
 
+# 1000ms Latency Threshold Ping Engine
 async def cmd_ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     start = time.time()
     msg = await context.bot.send_message(chat_id=update.effective_chat.id, text="📡 Pinging cluster...")
-    latency = round((time.time() - start) * 1000, 1)
-    status_emoji = "🟢" if latency < 450 else "🔴"
-    await msg.edit_text(f"📶 LATENCY TELEMETRY: {latency}ms {status_emoji}")
+    latency = round((time.time() - start) * 1000, 2)
+    indicator = "🟢" if latency <= 1000.0 else "🔴"
+    await msg.edit_text(f"📶 LATENCY TELEMETRY: {latency}ms {indicator}")
 
 async def cmd_getid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target = update.message.reply_to_message.from_user if update.message.reply_to_message else update.effective_user
@@ -779,28 +704,17 @@ async def cmd_omg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await status_msg.edit_text(f"❌ Extraction Error: {str(e)}")
 
-# Fixed TTS Handler to directly render Voice Note via In-Memory OGG buffer
 async def cmd_tts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = " ".join(update.message.text.split()[1:])
     if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +tts <text>")
-    
     if gTTS is None:
         return await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🔊 TTS Voice: {text}")
-    
     try:
-        fp = io.BytesIO()
         tts = gTTS(text=text, lang="hi")
-        tts.write_to_fp(fp)
-        fp.seek(0)
-        
-        voice_file = InputFile(fp, filename="voice.ogg")
-        await context.bot.send_voice(
-            chat_id=update.effective_chat.id, 
-            voice=voice_file,
-            reply_to_message_id=update.message.message_id
-        )
-    except Exception as e:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ TTS Error: {str(e)}")
+        tts.save("tts.mp3")
+        await context.bot.send_voice(chat_id=update.effective_chat.id, voice=open("tts.mp3", "rb"))
+    except Exception:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🔊 TTS Voice: {text}")
 
 async def cmd_roasthi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = update.message.text.split()[1:]
@@ -826,33 +740,45 @@ async def cmd_roasteng(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = f"🔥 {target_name} {roast_text}" if target_name else f"🔥 {roast_text}"
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
+# Clean, Standard & Auto-Checking +cluster Telemetry Engine
 async def cmd_cluster(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
-    
-    nodes_text = ""
+
+    chat_tasks = len(get_chat_data(update.effective_chat.id)["tasks"])
+    node_lines = []
+    active_nodes = 0
+    total_nodes = len(BOT_INSTANCES)
+
     for idx, bot in enumerate(BOT_INSTANCES, start=1):
         try:
-            bot_info = await bot.get_me()
-            nodes_text += f"  ├─ 🟢 Node-0{idx} : @{bot_info.username} ➔ ACTIVE\n"
+            me = await bot.get_me()
+            node_name = f"@{me.username}"
+            is_main = (MAIN_BOT_USERNAME == "" or me.username.lower() == MAIN_BOT_USERNAME)
+            tag = "[MAIN]" if is_main else "[ONLINE]"
+            
+            node_lines.append(f"├─ Node-0{idx} : 🟢 {node_name} {tag}")
+            active_nodes += 1
         except Exception:
-            nodes_text += f"  ├─ 🔴 Node-0{idx} : OFFLINE / TIMEOUT\n"
+            node_lines.append(f"├─ Node-0{idx} : 🔴 [OFFLINE / ERROR]")
 
-    active_tasks = len(get_chat_data(update.effective_chat.id)["tasks"])
-    sys_status = "🟢 ONLINE" if len(BOT_INSTANCES) > 0 else "🔴 DOWN"
+    if node_lines:
+        node_lines[-1] = node_lines[-1].replace("├─", "└─")
 
-    dashboard = (
-        "⚡ KRISHSLAYIN CLUSTER NODES ⚡\n"
+    node_matrix = "\n".join(node_lines)
+    
+    cluster_text = (
+        "🌐 SYSTEM CLUSTER TELEMETRY\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-        f"🛡️ SYSTEM STATUS   : {sys_status}\n"
-        f"📡 CONNECTED NODES  : 🟢 0{len(BOT_INSTANCES)} / 0{len(BOT_INSTANCES)} ONLINE\n"
-        "⚡ ENGINE LATENCY   : 🟢 LOW LATENCY ENGINE\n"
-        f"🔥 ACTIVE THREADS   : 🟢 0{active_tasks} ACTIVE TASKS\n\n"
-        "🤖 NODE MATRIX DISTRIBUTOR:\n"
-        f"{nodes_text.rstrip()}\n\n"
-        f"👑 COMMANDER ID : {OWNER_ID}\n"
+        f"Status          : ACTIVE 🟢\n"
+        f"Connected Nodes : {active_nodes:02d} / {total_nodes:02d}\n"
+        f"Active Tasks    : {chat_tasks:02d}\n\n"
+        "🤖 NODE MATRIX DISTRIBUTOR\n"
+        f"{node_matrix}\n\n"
+        f"👤 Authorized Operator : {OWNER_ID}\n"
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     )
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=dashboard)
+
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=cluster_text)
 
 async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
@@ -913,24 +839,38 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     bot_username = (await context.bot.get_me()).username.lower()
     is_main_bot = (MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME)
 
-    if user_id == OWNER_ID and text.startswith("+"):
+    # Check command validity
+    cmd_name = ""
+    is_valid_cmd = False
+    if text.startswith("+"):
+        possible_cmd = text.split()[0][1:].lower()
+        if possible_cmd in VALID_COMMANDS:
+            cmd_name = possible_cmd
+            is_valid_cmd = True
+
+    # Auto Delete Owner's Command Trigger Message ONLY IF IT IS A VALID COMMAND
+    if user_id == OWNER_ID and is_valid_cmd:
         try: await update.message.delete()
         except Exception: pass
 
+    # Photo Stripper Trap
     if chat_data.get("pfpstripper") and update.message.new_chat_photo:
         try: 
             await context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
             return
         except Exception: pass
 
+    # Muted & Blacklisted Enforcement
     if user_id in GBANNED_USERS or user_id in chat_data["muted"]:
         try: return await update.message.delete()
         except Exception: pass
 
+    # Media Stripper Enforcement
     if user_id in chat_data["stripmedia"] and (update.message.photo or update.message.video or update.message.document):
         try: return await update.message.delete()
         except Exception: pass
 
+    # Auto-Reply Trap
     autoreply_map = chat_data.get("autoreply", {})
     if user_id in autoreply_map or username in autoreply_map:
         target_key = user_id if user_id in autoreply_map else username
@@ -944,17 +884,17 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             )
         except Exception: pass
 
+    # Audio Repeat Trap (reptts)
     if user_id in chat_data["reptts"] and text and gTTS is not None:
         try:
-            fp = io.BytesIO()
             tts = gTTS(text=text, lang="hi")
-            tts.write_to_fp(fp)
-            fp.seek(0)
-            await context.bot.send_voice(chat_id=chat_id, voice=InputFile(fp, filename="voice.ogg"))
+            tts.save("reptts.mp3")
+            await context.bot.send_voice(chat_id=chat_id, voice=open("reptts.mp3", "rb"))
         except Exception: pass
 
+    # Synchronized Reaction Logic across cluster bots
     react_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
-    if react_mode is not None and not text.startswith("+"):
+    if react_mode is not None and not is_valid_cmd:
         should_react = False
         if react_mode == "all":
             should_react = True
@@ -971,10 +911,10 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
                 )
             except Exception: pass
 
-    if text.startswith("+"):
-        cmd = text.split()[0][1:].lower()
-
-        if cmd in MAIN_BOT_ONLY_COMMANDS and not is_main_bot:
+    # Command Execution Engine
+    if is_valid_cmd:
+        # Ignore command if restricted ONLY to Main Bot and current instance is a Clone
+        if cmd_name in MAIN_BOT_ONLY_COMMANDS and not is_main_bot:
             return
 
         if user_id != OWNER_ID:
@@ -991,7 +931,6 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "flood": cmd_flood, "vflood": cmd_vflood, "stopflood": cmd_stopflood,
             "gcpfp": cmd_gcpfp, "stopgcpfp": cmd_stopgcpfp,
             "voiceflood": cmd_voiceflood, "stopvoiceflood": cmd_stopvoiceflood,
-            "ht": cmd_ht, "copy": cmd_copy, "scopy": cmd_scopy,
             "mute": cmd_mute, "unmute": cmd_unmute, "mutelist": cmd_mutelist,
             "stripmedia": cmd_stripmedia, "stopstripmedia": cmd_stopstripmedia,
             "pfpstripper": cmd_pfpstripper,
@@ -1005,8 +944,8 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "slayinpowergifted": cmd_slayinpowergifted, "slayinpowertaken": cmd_slayinpowertaken,
             "slayinfor": cmd_slayinfor, "gban": cmd_gban, "ungban": cmd_ungban
         }
-        if cmd in routes:
-            handler = routes[cmd]
+        if cmd_name in routes:
+            handler = routes[cmd_name]
             await handler(update, context)
 
 async def start_single_bot(token: str, bot_index: int):
