@@ -38,7 +38,7 @@ REACTION_EMOJI = "🤣"
 MAIN_BOT_ONLY_COMMANDS = {
     "menu", "start", "panel", "mute", "unmute", "mutelist", 
     "gban", "ungban", "slayinpowergifted", "slayinpowertaken",
-    "cluster", "getid"
+    "cluster", "getid", "ht"
 }
 
 AUTOREPLY_LINES = [
@@ -83,7 +83,7 @@ VALID_COMMANDS = {
     "scan", "ping", "getid", "status", "omg", "tts",
     "roasthi", "roasteng", "cluster", "broadcast",
     "slayinpowergifted", "slayinpowertaken", "slayinfor",
-    "gban", "ungban"
+    "gban", "ungban", "ht"
 }
 
 def get_chat_data(chat_id):
@@ -183,6 +183,7 @@ def get_menu_text(page: int):
             "⛓️ TRAPS & TARGETING 🎯\n"
             "────────────────────────────\n"
             "• +panel — Interactive inline dashboard\n"
+            "• +ht — Honeytrap (Shadow-mute with fake unmute button)\n"
             "• +mute <user> — Shadow-mute target\n"
             "• +unmute <user> — Unmute target\n"
             "• +mutelist — View muted users\n"
@@ -231,8 +232,16 @@ def get_menu_text(page: int):
 
 async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
-    await query.answer()
     data = query.data
+    
+    if data == "fake_unmute":
+        # Pop-up alert dialog logic for Honeytrap button
+        return await query.answer(
+            text="🤣 Abee saale tu chutiya hai kya, mute tune lagaya jo tu hatayega!", 
+            show_alert=True
+        )
+
+    await query.answer()
     
     if data == "menu_close":
         return await query.message.delete()
@@ -513,6 +522,35 @@ async def cmd_stopvoiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE)
         await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Voice flood stopped.")
 
 # --- Moderation & Traps Commands ---
+
+async def cmd_ht(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    reply = update.message.reply_to_message
+    args = update.message.text.split()[1:]
+    
+    target_user = reply.from_user if reply else None
+    target_id = target_user.id if target_user else (int(args[0]) if args and args[0].isdigit() else None)
+
+    if not target_id: 
+        return await context.bot.send_message(
+            chat_id=update.effective_chat.id, 
+            text="⚠️ Reply to target user's message or pass User ID."
+        )
+
+    get_chat_data(update.effective_chat.id)["muted"].add(target_id)
+    
+    target_mention = f"@{target_user.username}" if (target_user and target_user.username) else f"`{target_id}`"
+    
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔊 Tap to Unmute Yourself", callback_data="fake_unmute")]
+    ])
+    
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, 
+        text=f"🔇 USER SHADOW-MUTED: {target_mention}",
+        reply_markup=keyboard,
+        parse_mode="Markdown"
+    )
 
 async def cmd_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -931,7 +969,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "flood": cmd_flood, "vflood": cmd_vflood, "stopflood": cmd_stopflood,
             "gcpfp": cmd_gcpfp, "stopgcpfp": cmd_stopgcpfp,
             "voiceflood": cmd_voiceflood, "stopvoiceflood": cmd_stopvoiceflood,
-            "mute": cmd_mute, "unmute": cmd_unmute, "mutelist": cmd_mutelist,
+            "ht": cmd_ht, "mute": cmd_mute, "unmute": cmd_unmute, "mutelist": cmd_mutelist,
             "stripmedia": cmd_stripmedia, "stopstripmedia": cmd_stopstripmedia,
             "pfpstripper": cmd_pfpstripper,
             "autoreply": cmd_autoreply, "vautoreply": cmd_vautoreply, "stopautoreply": cmd_stopautoreply,
