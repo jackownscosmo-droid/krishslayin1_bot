@@ -38,7 +38,7 @@ REACTION_EMOJI = "🤣"
 MAIN_BOT_ONLY_COMMANDS = {
     "menu", "start", "panel", "mute", "unmute", "mutelist", 
     "gban", "ungban", "slayinpowergifted", "slayinpowertaken",
-    "cluster", "getid", "ht"
+    "cluster", "getid", "ht", "join", "leave", "joinkrishslayin", "leavekrishslayin"
 }
 
 AUTOREPLY_LINES = [
@@ -83,7 +83,7 @@ VALID_COMMANDS = {
     "scan", "ping", "getid", "status", "omg", "tts",
     "roasthi", "roasteng", "cluster", "broadcast",
     "slayinpowergifted", "slayinpowertaken", "slayinfor",
-    "gban", "ungban", "ht"
+    "gban", "ungban", "ht", "join", "leave", "joinkrishslayin", "leavekrishslayin"
 }
 
 def get_chat_data(chat_id):
@@ -94,8 +94,7 @@ def get_chat_data(chat_id):
             "stripmedia": set(),
             "pfpstripper": False,
             "autoreply": {},
-            "reptts": set(),
-            "vtarget_data": {}
+            "reptts": set()
         }
     return CHAT_TASKS[chat_id]
 
@@ -122,7 +121,6 @@ async def hard_stop_all(chat_id: int, context: ContextTypes.DEFAULT_TYPE, user_i
     chat_data["stripmedia"].clear()
     chat_data["autoreply"].clear()
     chat_data["reptts"].clear()
-    chat_data["vtarget_data"].clear()
     chat_data["pfpstripper"] = False
     GLOBAL_CHAT_REACT_MODE[chat_id] = None
 
@@ -168,7 +166,7 @@ def get_menu_text(page: int):
             "• +vgcnc [spd] <Title 1 | Title 2> — Title rotator\n"
             "• +stopgcnc — Halt active title loop\n"
             "• +target <user> — Mention loop\n"
-            "• +vtarget <text> — 15 Swipe reply target loop\n"
+            "• +vtarget <user> <text> — Custom mention loop\n"
             "• +stoptarget — Disarm targeting loop\n"
             "• +spam <text> — Multi-bot high-speed spam\n"
             "• +stopspam — EMERGENCY KILL-SWITCH (STOPS EVERYTHING)\n"
@@ -197,7 +195,7 @@ def get_menu_text(page: int):
             "• +stopautoreply — Disarm auto-reply\n"
             "• +reptts <user> — Voice trap\n"
             "• +stopreptts — Disarm voice trap\n"
-            "• +clean [count] — Fast purge messages (Up to 1000)\n"
+            "• +clean [count] — Purge recent messages\n"
             "• +togglereactall — Toggle reactions for ALL users\n"
             "• +togglereact — Toggle reactions for ADMINS ONLY\n"
             "• +stopall — Emergency Kill Switch"
@@ -220,10 +218,14 @@ def get_menu_text(page: int):
         return (
             "👑 OWNER CONTROLS\n"
             "────────────────────────────\n"
+            "• +join <@bot_username> — Send specific bot to GC via invite link\n"
+            "• +leave <@bot_username> — Remove specific bot from chat\n"
+            "• +joinkrishslayin — Mass join all cluster bots\n"
+            "• +leavekrishslayin — Mass leave all cluster bots\n"
             "• +cluster — Node telemetry\n"
             "• +broadcast <text> — Network broadcast\n"
-            "• +slayinpowergifted <id> — Add admin (Owner Only)\n"
-            "• +slayinpowertaken <id> — Revoke admin (Owner Only)\n"
+            "• +slayinpowergifted <id> — Add admin\n"
+            "• +slayinpowertaken <id> — Revoke admin\n"
             "• +slayinfor — List admins\n"
             "• +gban <user> — Global ban\n"
             "• +ungban <user> — Global unban\n\n"
@@ -279,7 +281,8 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     async def multi_gcnc_loop():
         titles = [f"⚡ {name} ⚡", f"🔥 {name} 🔥", f"👑 {name} 👑"]
-        title_idx, bot_idx = 0, 0
+        title_idx = 0
+        bot_idx = 0
         total_bots = len(BOT_INSTANCES)
         while True:
             current_bot = BOT_INSTANCES[bot_idx % total_bots]
@@ -316,7 +319,8 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "gcnc" in chat_data["tasks"]: chat_data["tasks"]["gcnc"].cancel()
 
     async def multi_vgcnc_loop():
-        title_idx, bot_idx = 0, 0
+        title_idx = 0
+        bot_idx = 0
         total_bots = len(BOT_INSTANCES)
         while True:
             current_bot = BOT_INSTANCES[bot_idx % total_bots]
@@ -389,53 +393,31 @@ async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
-    reply = update.message.reply_to_message
     args = update.message.text.split()[1:]
-    
-    if not reply or not reply.from_user:
-        return await context.bot.send_message(
-            chat_id=update.effective_chat.id, 
-            text="⚠️ Target ke message par swipe/reply karke command do: `+vtarget <text>`",
-            parse_mode="Markdown"
-        )
-
-    custom_text = " ".join(args) if args else "Abe lund ke andar ki jhant 🤣🤣"
-    target_id = reply.from_user.id
-    target_msg_id = reply.message_id
+    if len(args) < 2: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +vtarget <user> <text>")
+    user, custom_text = args[0], " ".join(args[1:])
     chat_data = get_chat_data(update.effective_chat.id)
+    if "target" in chat_data["tasks"]: chat_data["tasks"]["target"].cancel()
 
-    chat_data["vtarget_data"][target_id] = {
-        "text": custom_text,
-        "last_msg_id": target_msg_id,
-        "active": True
-    }
-
-    asyncio.create_task(execute_15_replies(update.effective_chat.id, target_msg_id, custom_text))
-
-async def execute_15_replies(chat_id: int, reply_to_msg_id: int, text: str):
-    bot_idx = 0
-    total_bots = len(BOT_INSTANCES) if BOT_INSTANCES else 1
-
-    for _ in range(15):
-        try:
+    async def multi_vtarget_loop():
+        bot_idx = 0
+        total_bots = len(BOT_INSTANCES)
+        while True:
             current_bot = BOT_INSTANCES[bot_idx % total_bots]
-            await current_bot.send_message(
-                chat_id=chat_id,
-                text=text,
-                reply_to_message_id=reply_to_msg_id
-            )
+            try: await current_bot.send_message(chat_id=update.effective_chat.id, text=f"{user} {custom_text}")
+            except Exception: pass
             bot_idx += 1
-            await asyncio.sleep(0.15)
-        except Exception:
-            pass
+            await asyncio.sleep(0.2)
+
+    task = asyncio.create_task(multi_vtarget_loop())
+    chat_data["tasks"]["target"] = task
 
 async def cmd_stoptarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
-    chat_data["vtarget_data"].clear()
     if "target" in chat_data["tasks"]:
         chat_data["tasks"]["target"].cancel()
         del chat_data["tasks"]["target"]
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Targeting disarmed.")
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Targeting disarmed.")
 
 async def cmd_flood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -559,6 +541,7 @@ async def cmd_ht(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     get_chat_data(update.effective_chat.id)["muted"].add(target_id)
+    
     target_mention = f"@{target_user.username}" if (target_user and target_user.username) else f"`{target_id}`"
     
     keyboard = InlineKeyboardMarkup([
@@ -620,7 +603,8 @@ async def cmd_autoreply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply = update.message.reply_to_message
     args = update.message.text.split()[1:]
     
-    target_id, target_username = None, None
+    target_id = None
+    target_username = None
 
     if reply and reply.from_user:
         target_id = reply.from_user.id
@@ -669,26 +653,15 @@ async def cmd_stopreptts(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
-    count = int(args[0]) if args and args[0].isdigit() else 100
-    count = min(count, 1000)
-
-    chat_id = update.effective_chat.id
-    current_msg_id = update.message.message_id
-    msg_ids = list(range(current_msg_id, max(1, current_msg_id - count), -1))
-    
-    chunk_size = 100
+    count = int(args[0]) if args and args[0].isdigit() else 10
+    msg_id = update.message.message_id
     deleted = 0
-    for i in range(0, len(msg_ids), chunk_size):
-        chunk = msg_ids[i:i + chunk_size]
+    for i in range(count + 1):
         try:
-            await context.bot.delete_messages(chat_id=chat_id, message_ids=chunk)
-            deleted += len(chunk)
-        except Exception:
-            tasks = [context.bot.delete_message(chat_id=chat_id, message_id=m_id) for m_id in chunk]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
-            deleted += sum(1 for r in results if not isinstance(r, Exception))
-
-    status = await context.bot.send_message(chat_id=chat_id, text=f"🧹 Purged {deleted} messages fast!")
+            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=msg_id - i)
+            deleted += 1
+        except Exception: pass
+    status = await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🧹 Purged {deleted} messages.")
     await asyncio.sleep(2)
     try: await status.delete()
     except Exception: pass
@@ -807,6 +780,91 @@ async def cmd_roasteng(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = f"🔥 {target_name} {roast_text}" if target_name else f"🔥 {roast_text}"
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
+# --- Dynamic Cluster Join/Leave Commands ---
+
+async def cmd_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID: return
+    args = update.message.text.split()[1:]
+    if len(args) < 1:
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +join <@bot_username> [invite_link]")
+    
+    target_bot_username = args[0].lower().replace("@", "")
+    invite_link = args[1] if len(args) > 1 else None
+    
+    found = False
+    for bot in BOT_INSTANCES:
+        me = await bot.get_me()
+        if me.username.lower() == target_bot_username:
+            found = True
+            try:
+                if invite_link:
+                    await bot.join_chat(invite_link)
+                else:
+                    await bot.send_message(chat_id=update.effective_chat.id, text=f"✅ Bot @{me.username} active in chat.")
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"✅ Bot @{me.username} successfully processed join.")
+            except Exception as e:
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to join with @{me.username}: {e}")
+            break
+            
+    if not found:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚠️ Bot @{target_bot_username} cluster instance me nahi mila.")
+
+async def cmd_leave(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID: return
+    args = update.message.text.split()[1:]
+    if not args:
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +leave <@bot_username>")
+    
+    target_bot_username = args[0].lower().replace("@", "")
+    
+    found = False
+    for bot in BOT_INSTANCES:
+        me = await bot.get_me()
+        if me.username.lower() == target_bot_username:
+            found = True
+            try:
+                await bot.leave_chat(chat_id=update.effective_chat.id)
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"👋 Bot @{me.username} left the chat.")
+            except Exception as e:
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to leave: {e}")
+            break
+            
+    if not found:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚠️ Bot @{target_bot_username} cluster instance me nahi mila.")
+
+async def cmd_joinkrishslayin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID: return
+    args = update.message.text.split()[1:]
+    invite_link = args[0] if args else None
+    
+    joined = 0
+    failed = 0
+    for bot in BOT_INSTANCES:
+        try:
+            if invite_link:
+                await bot.join_chat(invite_link)
+            joined += 1
+        except Exception:
+            failed += 1
+            
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, 
+        text=f"🌐 MASS JOIN COMPLETE:\n✅ Connected: {joined}\n❌ Failed: {failed}"
+    )
+
+async def cmd_leavekrishslayin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if update.effective_user.id != OWNER_ID: return
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="👋 Initiating Mass Leave across all cluster bots...")
+    
+    for bot in BOT_INSTANCES:
+        try:
+            me = await bot.get_me()
+            # Retain Main bot if preferred or leave all
+            await bot.leave_chat(chat_id=update.effective_chat.id)
+        except Exception: pass
+
+# --- Owner Telemetry & Management Commands ---
+
 async def cmd_cluster(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
 
@@ -852,11 +910,8 @@ async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +broadcast <text>")
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"📢 GLOBAL BROADCAST SENT:\n{text}")
 
-# STRICT OWNER-ONLY ADMIN MANAGEMENT
 async def cmd_slayinpowergifted(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != OWNER_ID: 
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Access Denied: Only Bot Owner can give admin powers!")
-    
+    if update.effective_user.id != OWNER_ID: return
     args = update.message.text.split()[1:]
     target_id = int(args[0]) if args and args[0].isdigit() else (update.message.reply_to_message.from_user.id if update.message.reply_to_message else None)
     if target_id:
@@ -864,9 +919,7 @@ async def cmd_slayinpowergifted(update: Update, context: ContextTypes.DEFAULT_TY
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"👑 Admin rights granted to {target_id}.")
 
 async def cmd_slayinpowertaken(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != OWNER_ID: 
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="❌ Access Denied: Only Bot Owner can take admin powers!")
-    
+    if update.effective_user.id != OWNER_ID: return
     args = update.message.text.split()[1:]
     target_id = int(args[0]) if args and args[0].isdigit() else (update.message.reply_to_message.from_user.id if update.message.reply_to_message else None)
     if target_id and target_id != OWNER_ID:
@@ -924,13 +977,6 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
         try: await update.message.delete()
         except Exception: pass
 
-    # Active vtarget trigger handler (15 swipe replies on targeted user's new message)
-    if user_id in chat_data["vtarget_data"]:
-        v_data = chat_data["vtarget_data"][user_id]
-        if v_data.get("active"):
-            new_target_msg_id = update.message.message_id
-            asyncio.create_task(execute_15_replies(chat_id, new_target_msg_id, v_data["text"]))
-
     # Photo Stripper Trap
     if chat_data.get("pfpstripper") and update.message.new_chat_photo:
         try: 
@@ -970,7 +1016,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             await context.bot.send_voice(chat_id=chat_id, voice=open("reptts.mp3", "rb"))
         except Exception: pass
 
-    # Synchronized Reaction Logic across cluster bots
+    # Synchronized Reaction Logic
     react_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
     if react_mode is not None and not is_valid_cmd:
         should_react = False
@@ -991,6 +1037,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
 
     # Command Execution Engine
     if is_valid_cmd:
+        # Restrict Main-Bot ONLY commands
         if cmd_name in MAIN_BOT_ONLY_COMMANDS and not is_main_bot:
             return
 
@@ -1019,7 +1066,9 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "roasthi": cmd_roasthi, "roasteng": cmd_roasteng,
             "cluster": cmd_cluster, "broadcast": cmd_broadcast,
             "slayinpowergifted": cmd_slayinpowergifted, "slayinpowertaken": cmd_slayinpowertaken,
-            "slayinfor": cmd_slayinfor, "gban": cmd_gban, "ungban": cmd_ungban
+            "slayinfor": cmd_slayinfor, "gban": cmd_gban, "ungban": cmd_ungban,
+            "join": cmd_join, "leave": cmd_leave,
+            "joinkrishslayin": cmd_joinkrishslayin, "leavekrishslayin": cmd_leavekrishslayin
         }
         if cmd_name in routes:
             handler = routes[cmd_name]
