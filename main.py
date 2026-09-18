@@ -139,6 +139,7 @@ def get_menu_keyboard(page: int):
                 InlineKeyboardButton("BLACKOUT CONTROL 🛡️", callback_data="menu_4"),
                 InlineKeyboardButton("OWNER CONTROL 🎛️", callback_data="menu_5")
             ],
+            [InlineKeyboardButton("🤖 BOT CLUSTER PANEL (JOIN BOTS)", callback_data="bot_selector_panel")],
             [InlineKeyboardButton("🎛️ Open Control Panel", callback_data="open_panel")],
             [InlineKeyboardButton("❌ Close Menu", callback_data="menu_close")]
         ]
@@ -220,7 +221,7 @@ def get_menu_text(page: int):
             "────────────────────────────\n"
             "• +join <@bot_username> — Send specific bot to GC via invite link\n"
             "• +leave <@bot_username> — Remove specific bot from chat\n"
-            "• +joinkrishslayin — Mass join all cluster bots\n"
+            "• +joinkrishslayin <t.me/... or link> — Mass join all cluster bots\n"
             "• +leavekrishslayin — Mass leave all cluster bots\n"
             "• +cluster — Node telemetry\n"
             "• +broadcast <text> — Network broadcast\n"
@@ -231,6 +232,27 @@ def get_menu_text(page: int):
             "• +ungban <user> — Global unban\n\n"
             f"⚡ Active Admins:\n{admin_list}"
         )
+
+# --- Dynamic Bot Selector Keyboard ---
+
+async def build_bot_selector_keyboard(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
+    buttons = []
+    for bot in BOT_INSTANCES:
+        try:
+            me = await bot.get_me()
+            btn_text = f"🤖 {me.first_name} (@{me.username})"
+            # URL format to add bot directly to current group or open bot
+            add_url = f"https://t.me/{me.username}?startgroup=true"
+            buttons.append([
+                InlineKeyboardButton(btn_text, url=add_url),
+                InlineKeyboardButton("➕ Add Here", callback_data=f"addbot_{me.username}")
+            ])
+        except Exception:
+            pass
+
+    buttons.append([InlineKeyboardButton("➕ Add ALL Bots To GC", callback_data="add_all_bots")])
+    buttons.append([InlineKeyboardButton("✝️ Return to Main Menu", callback_data="menu_1")])
+    return InlineKeyboardMarkup(buttons)
 
 # --- Callbacks ---
 
@@ -248,15 +270,60 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     
     if data == "menu_close":
         return await query.message.delete()
+
+    elif data == "bot_selector_panel":
+        kb = await build_bot_selector_keyboard(query.message.chat_id, context)
+        return await query.edit_message_text(
+            "🤖 *BOT CLUSTER MANAGEMENT PANEL*\n\n"
+            "Neeche sabhi connected cluster bots hain.\n"
+            "• Direct **Add Here** pe click karke bot ko current GC me bulao.\n"
+            "• Yaa direct Link se add karne ke liye name pe click karo.",
+            reply_markup=kb,
+            parse_mode="Markdown"
+        )
+
+    elif data.startswith("addbot_"):
+        target_username = data.split("_")[1].lower()
+        chat_id = query.message.chat_id
+        
+        # Try finding bot and inviting/adding
+        success = False
+        for bot in BOT_INSTANCES:
+            me = await bot.get_me()
+            if me.username.lower() == target_username:
+                try:
+                    # Request Chat link or send start link
+                    link = f"https://t.me/{me.username}?startgroup=true"
+                    await query.message.reply_text(f"👉 Click to add @{me.username} to group: {link}")
+                    success = True
+                except Exception as e:
+                    await query.answer(f"Failed: {e}", show_alert=True)
+                break
+        if success:
+            await query.answer(f"Bot link sent!", show_alert=False)
+
+    elif data == "add_all_bots":
+        chat_id = query.message.chat_id
+        text_links = "🚀 **ALL CLUSTER BOTS ADD LINKS:**\n\n"
+        for bot in BOT_INSTANCES:
+            try:
+                me = await bot.get_me()
+                text_links += f"• [{me.first_name}](https://t.me/{me.username}?startgroup=true)\n"
+            except Exception: pass
+        
+        await query.message.reply_text(text_links, parse_mode="Markdown", disable_web_page_preview=True)
+
     elif data == "open_panel":
         keyboard = [
             [InlineKeyboardButton("Abort All Active Tasks 🚨", callback_data="stop_all")],
             [InlineKeyboardButton("✝️ Return to Main Menu", callback_data="menu_1")]
         ]
         return await query.edit_message_text("🎛️ BATTLE-DECK CONTROL PANEL:\nDirect chat override active.", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
+    
     elif data == "stop_all":
         await hard_stop_all(query.message.chat_id, context, query.from_user.id)
         return await query.edit_message_text("🚨 ALL ACTIVE TASKS & TRAPS TERMINATED 100%.", reply_markup=get_menu_keyboard(1))
+    
     elif data.startswith("menu_"):
         page = int(data.split("_")[1])
         await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page), parse_mode="Markdown")
@@ -785,24 +852,20 @@ async def cmd_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
     args = update.message.text.split()[1:]
     if len(args) < 1:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +join <@bot_username> [invite_link]")
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +join <@bot_username>")
     
     target_bot_username = args[0].lower().replace("@", "")
-    invite_link = args[1] if len(args) > 1 else None
     
     found = False
     for bot in BOT_INSTANCES:
         me = await bot.get_me()
         if me.username.lower() == target_bot_username:
             found = True
-            try:
-                if invite_link:
-                    await bot.join_chat(invite_link)
-                else:
-                    await bot.send_message(chat_id=update.effective_chat.id, text=f"✅ Bot @{me.username} active in chat.")
-                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"✅ Bot @{me.username} successfully processed join.")
-            except Exception as e:
-                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to join with @{me.username}: {e}")
+            link = f"https://t.me/{me.username}?startgroup=true"
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id, 
+                text=f"👉 Click here to add @{me.username} to this group:\n{link}"
+            )
             break
             
     if not found:
@@ -833,22 +896,20 @@ async def cmd_leave(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_joinkrishslayin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
-    args = update.message.text.split()[1:]
-    invite_link = args[0] if args else None
     
-    joined = 0
-    failed = 0
-    for bot in BOT_INSTANCES:
+    # Send quick add buttons for all bots to current GC
+    text_links = "🌐 **MASS JOIN CLUSTER BOTS:**\n\nNeeche links pe click karke sabhi bots ko fast add karo:\n\n"
+    for idx, bot in enumerate(BOT_INSTANCES, start=1):
         try:
-            if invite_link:
-                await bot.join_chat(invite_link)
-            joined += 1
-        except Exception:
-            failed += 1
-            
+            me = await bot.get_me()
+            text_links += f"{idx}. [{me.first_name} (@{me.username})](https://t.me/{me.username}?startgroup=true)\n"
+        except Exception: pass
+
     await context.bot.send_message(
         chat_id=update.effective_chat.id, 
-        text=f"🌐 MASS JOIN COMPLETE:\n✅ Connected: {joined}\n❌ Failed: {failed}"
+        text=text_links,
+        parse_mode="Markdown",
+        disable_web_page_preview=True
     )
 
 async def cmd_leavekrishslayin(update: Update, context: ContextTypes.DEFAULT_TYPE):
