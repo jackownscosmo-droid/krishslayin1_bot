@@ -38,7 +38,7 @@ REACTION_EMOJI = "🤣"
 MAIN_BOT_ONLY_COMMANDS = {
     "menu", "start", "panel", "mute", "unmute", "mutelist", 
     "gban", "ungban", "slayinpowergifted", "slayinpowertaken",
-    "cluster", "getid", "ht", "join", "leave", "joinkrishslayin", "leavekrishslayin"
+    "cluster", "getid", "ht", "leave", "leavekrishslayin"
 }
 
 AUTOREPLY_LINES = [
@@ -80,10 +80,10 @@ VALID_COMMANDS = {
     "stripmedia", "stopstripmedia", "pfpstripper", "autoreply",
     "vautoreply", "stopautoreply", "reptts", "stopreptts",
     "clean", "togglereactall", "togglereact", "stopall",
-    "scan", "ping", "getid", "status", "omg", "tts",
+    "scan", "ping", "getid", "status", "omg", "tts", "ttshi", "ttsen", "ttsjap", "ttsgerman",
     "roasthi", "roasteng", "cluster", "broadcast",
     "slayinpowergifted", "slayinpowertaken", "slayinfor",
-    "gban", "ungban", "ht", "join", "leave", "joinkrishslayin", "leavekrishslayin"
+    "gban", "ungban", "ht", "leave", "leavekrishslayin"
 }
 
 def get_chat_data(chat_id):
@@ -139,8 +139,6 @@ def get_menu_keyboard(page: int):
                 InlineKeyboardButton("BLACKOUT CONTROL 🛡️", callback_data="menu_4"),
                 InlineKeyboardButton("OWNER CONTROL 🎛️", callback_data="menu_5")
             ],
-            [InlineKeyboardButton("🤖 BOT CLUSTER PANEL (JOIN BOTS)", callback_data="bot_selector_panel")],
-            [InlineKeyboardButton("🎛️ Open Control Panel", callback_data="open_panel")],
             [InlineKeyboardButton("❌ Close Menu", callback_data="menu_close")]
         ]
     else:
@@ -170,7 +168,7 @@ def get_menu_text(page: int):
             "• +vtarget <user> <text> — Custom mention loop\n"
             "• +stoptarget — Disarm targeting loop\n"
             "• +spam <text> — Multi-bot high-speed spam\n"
-            "• +stopspam — EMERGENCY KILL-SWITCH (STOPS EVERYTHING)\n"
+            "• +stopspam — EMERGENCY KILL-SWITCH\n"
             "• +flood <user> — Mention flood\n"
             "• +vflood <user> <text> — Custom mention flood\n"
             "• +stopflood — Stop mention flood\n"
@@ -183,8 +181,7 @@ def get_menu_text(page: int):
         return (
             "⛓️ TRAPS & TARGETING 🎯\n"
             "────────────────────────────\n"
-            "• +panel — Interactive inline dashboard\n"
-            "• +ht — Honeytrap (Shadow-mute with fake unmute button)\n"
+            "• +ht — Shadow-mute with fake unmute button\n"
             "• +mute <user> — Shadow-mute target\n"
             "• +unmute <user> — Unmute target\n"
             "• +mutelist — View muted users\n"
@@ -194,7 +191,7 @@ def get_menu_text(page: int):
             "• +autoreply <user> — Auto-reply trap\n"
             "• +vautoreply <user> <msg> — Custom reply trap\n"
             "• +stopautoreply — Disarm auto-reply\n"
-            "• +reptts <user> — Voice trap\n"
+            "• +reptts <user> — Voice trap (Reads target msg)\n"
             "• +stopreptts — Disarm voice trap\n"
             "• +clean [count] — Purge recent messages\n"
             "• +togglereactall — Toggle reactions for ALL users\n"
@@ -210,7 +207,11 @@ def get_menu_text(page: int):
             "• +getid — Fetch numeric ID\n"
             "• +status — Cluster state\n"
             "• +omg — Extract view-once media to PM\n"
-            "• +tts <text> — Text to speech\n"
+            "• +tts <text> — Hindi Voice (Default)\n"
+            "• +ttshi <text> — Hindi Voice\n"
+            "• +ttsen <text> — English Voice\n"
+            "• +ttsjap <text> — Japanese Voice\n"
+            "• +ttsgerman <text> — German Voice\n"
             "• +roasthi <user> — Hindi roast\n"
             "• +roasteng <user> — English roast"
         )
@@ -219,9 +220,7 @@ def get_menu_text(page: int):
         return (
             "👑 OWNER CONTROLS\n"
             "────────────────────────────\n"
-            "• +join <@bot_username> — Send specific bot to GC via invite link\n"
             "• +leave <@bot_username> — Remove specific bot from chat\n"
-            "• +joinkrishslayin <t.me/... or link> — Mass join all cluster bots\n"
             "• +leavekrishslayin — Mass leave all cluster bots\n"
             "• +cluster — Node telemetry\n"
             "• +broadcast <text> — Network broadcast\n"
@@ -232,27 +231,6 @@ def get_menu_text(page: int):
             "• +ungban <user> — Global unban\n\n"
             f"⚡ Active Admins:\n{admin_list}"
         )
-
-# --- Dynamic Bot Selector Keyboard ---
-
-async def build_bot_selector_keyboard(chat_id: int, context: ContextTypes.DEFAULT_TYPE):
-    buttons = []
-    for bot in BOT_INSTANCES:
-        try:
-            me = await bot.get_me()
-            btn_text = f"🤖 {me.first_name} (@{me.username})"
-            # URL format to add bot directly to current group or open bot
-            add_url = f"https://t.me/{me.username}?startgroup=true"
-            buttons.append([
-                InlineKeyboardButton(btn_text, url=add_url),
-                InlineKeyboardButton("➕ Add Here", callback_data=f"addbot_{me.username}")
-            ])
-        except Exception:
-            pass
-
-    buttons.append([InlineKeyboardButton("➕ Add ALL Bots To GC", callback_data="add_all_bots")])
-    buttons.append([InlineKeyboardButton("✝️ Return to Main Menu", callback_data="menu_1")])
-    return InlineKeyboardMarkup(buttons)
 
 # --- Callbacks ---
 
@@ -271,55 +249,6 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     if data == "menu_close":
         return await query.message.delete()
 
-    elif data == "bot_selector_panel":
-        kb = await build_bot_selector_keyboard(query.message.chat_id, context)
-        return await query.edit_message_text(
-            "🤖 *BOT CLUSTER MANAGEMENT PANEL*\n\n"
-            "Neeche sabhi connected cluster bots hain.\n"
-            "• Direct **Add Here** pe click karke bot ko current GC me bulao.\n"
-            "• Yaa direct Link se add karne ke liye name pe click karo.",
-            reply_markup=kb,
-            parse_mode="Markdown"
-        )
-
-    elif data.startswith("addbot_"):
-        target_username = data.split("_")[1].lower()
-        chat_id = query.message.chat_id
-        
-        # Try finding bot and inviting/adding
-        success = False
-        for bot in BOT_INSTANCES:
-            me = await bot.get_me()
-            if me.username.lower() == target_username:
-                try:
-                    # Request Chat link or send start link
-                    link = f"https://t.me/{me.username}?startgroup=true"
-                    await query.message.reply_text(f"👉 Click to add @{me.username} to group: {link}")
-                    success = True
-                except Exception as e:
-                    await query.answer(f"Failed: {e}", show_alert=True)
-                break
-        if success:
-            await query.answer(f"Bot link sent!", show_alert=False)
-
-    elif data == "add_all_bots":
-        chat_id = query.message.chat_id
-        text_links = "🚀 **ALL CLUSTER BOTS ADD LINKS:**\n\n"
-        for bot in BOT_INSTANCES:
-            try:
-                me = await bot.get_me()
-                text_links += f"• [{me.first_name}](https://t.me/{me.username}?startgroup=true)\n"
-            except Exception: pass
-        
-        await query.message.reply_text(text_links, parse_mode="Markdown", disable_web_page_preview=True)
-
-    elif data == "open_panel":
-        keyboard = [
-            [InlineKeyboardButton("Abort All Active Tasks 🚨", callback_data="stop_all")],
-            [InlineKeyboardButton("✝️ Return to Main Menu", callback_data="menu_1")]
-        ]
-        return await query.edit_message_text("🎛️ BATTLE-DECK CONTROL PANEL:\nDirect chat override active.", reply_markup=InlineKeyboardMarkup(keyboard), parse_mode="Markdown")
-    
     elif data == "stop_all":
         await hard_stop_all(query.message.chat_id, context, query.from_user.id)
         return await query.edit_message_text("🚨 ALL ACTIVE TASKS & TRAPS TERMINATED 100%.", reply_markup=get_menu_keyboard(1))
@@ -810,17 +739,46 @@ async def cmd_omg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await status_msg.edit_text(f"❌ Extraction Error: {str(e)}")
 
+# --- Multi-Language TTS Engine ---
+
+async def generate_and_send_tts(chat_id, text, lang, context):
+    if gTTS is None:
+        return await context.bot.send_message(chat_id=chat_id, text=f"🔊 TTS Voice ({lang}): {text}")
+    try:
+        tts = gTTS(text=text, lang=lang)
+        file_name = f"tts_{random.randint(1000, 9999)}.mp3"
+        tts.save(file_name)
+        with open(file_name, "rb") as voice_file:
+            await context.bot.send_voice(chat_id=chat_id, voice=voice_file)
+        if os.path.exists(file_name):
+            os.remove(file_name)
+    except Exception as e:
+        await context.bot.send_message(chat_id=chat_id, text=f"🔊 TTS Error: {str(e)}")
+
 async def cmd_tts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = " ".join(update.message.text.split()[1:])
     if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +tts <text>")
-    if gTTS is None:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🔊 TTS Voice: {text}")
-    try:
-        tts = gTTS(text=text, lang="hi")
-        tts.save("tts.mp3")
-        await context.bot.send_voice(chat_id=update.effective_chat.id, voice=open("tts.mp3", "rb"))
-    except Exception:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🔊 TTS Voice: {text}")
+    await generate_and_send_tts(update.effective_chat.id, text, "hi", context)
+
+async def cmd_ttshi(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = " ".join(update.message.text.split()[1:])
+    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +ttshi <text>")
+    await generate_and_send_tts(update.effective_chat.id, text, "hi", context)
+
+async def cmd_ttsen(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = " ".join(update.message.text.split()[1:])
+    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +ttsen <text>")
+    await generate_and_send_tts(update.effective_chat.id, text, "en", context)
+
+async def cmd_ttsjap(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = " ".join(update.message.text.split()[1:])
+    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +ttsjap <text>")
+    await generate_and_send_tts(update.effective_chat.id, text, "ja", context)
+
+async def cmd_ttsgerman(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = " ".join(update.message.text.split()[1:])
+    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +ttsgerman <text>")
+    await generate_and_send_tts(update.effective_chat.id, text, "de", context)
 
 async def cmd_roasthi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = update.message.text.split()[1:]
@@ -846,30 +804,7 @@ async def cmd_roasteng(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = f"🔥 {target_name} {roast_text}" if target_name else f"🔥 {roast_text}"
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
-# --- Dynamic Cluster Join/Leave Commands ---
-
-async def cmd_join(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != OWNER_ID: return
-    args = update.message.text.split()[1:]
-    if len(args) < 1:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +join <@bot_username>")
-    
-    target_bot_username = args[0].lower().replace("@", "")
-    
-    found = False
-    for bot in BOT_INSTANCES:
-        me = await bot.get_me()
-        if me.username.lower() == target_bot_username:
-            found = True
-            link = f"https://t.me/{me.username}?startgroup=true"
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id, 
-                text=f"👉 Click here to add @{me.username} to this group:\n{link}"
-            )
-            break
-            
-    if not found:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚠️ Bot @{target_bot_username} cluster instance me nahi mila.")
+# --- Dynamic Cluster Leave Commands ---
 
 async def cmd_leave(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
@@ -893,24 +828,6 @@ async def cmd_leave(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
     if not found:
         await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚠️ Bot @{target_bot_username} cluster instance me nahi mila.")
-
-async def cmd_joinkrishslayin(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if update.effective_user.id != OWNER_ID: return
-    
-    # Send quick add buttons for all bots to current GC
-    text_links = "🌐 **MASS JOIN CLUSTER BOTS:**\n\nNeeche links pe click karke sabhi bots ko fast add karo:\n\n"
-    for idx, bot in enumerate(BOT_INSTANCES, start=1):
-        try:
-            me = await bot.get_me()
-            text_links += f"{idx}. [{me.first_name} (@{me.username})](https://t.me/{me.username}?startgroup=true)\n"
-        except Exception: pass
-
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, 
-        text=text_links,
-        parse_mode="Markdown",
-        disable_web_page_preview=True
-    )
 
 async def cmd_leavekrishslayin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
@@ -1066,13 +983,9 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             )
         except Exception: pass
 
-    # Audio Repeat Trap (reptts)
-    if user_id in chat_data["reptts"] and text and gTTS is not None:
-        try:
-            tts = gTTS(text=text, lang="hi")
-            tts.save("reptts.mp3")
-            await context.bot.send_voice(chat_id=chat_id, voice=open("reptts.mp3", "rb"))
-        except Exception: pass
+    # Audio Repeat Trap (reptts) - Fixed to read user message and send voice
+    if user_id in chat_data["reptts"] and text:
+        await generate_and_send_tts(chat_id, text, "hi", context)
 
     # Synchronized Reaction Logic
     react_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
@@ -1119,13 +1032,13 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "reptts": cmd_reptts, "stopreptts": cmd_stopreptts,
             "clean": cmd_clean, "togglereactall": cmd_togglereactall, "togglereact": cmd_togglereact, "stopall": cmd_stopall,
             "scan": cmd_scan, "ping": cmd_ping, "getid": cmd_getid, "status": cmd_status,
-            "omg": cmd_omg, "tts": cmd_tts,
+            "omg": cmd_omg, 
+            "tts": cmd_tts, "ttshi": cmd_ttshi, "ttsen": cmd_ttsen, "ttsjap": cmd_ttsjap, "ttsgerman": cmd_ttsgerman,
             "roasthi": cmd_roasthi, "roasteng": cmd_roasteng,
             "cluster": cmd_cluster, "broadcast": cmd_broadcast,
             "slayinpowergifted": cmd_slayinpowergifted, "slayinpowertaken": cmd_slayinpowertaken,
             "slayinfor": cmd_slayinfor, "gban": cmd_gban, "ungban": cmd_ungban,
-            "join": cmd_join, "leave": cmd_leave,
-            "joinkrishslayin": cmd_joinkrishslayin, "leavekrishslayin": cmd_leavekrishslayin
+            "leave": cmd_leave, "leavekrishslayin": cmd_leavekrishslayin
         }
         if cmd_name in routes:
             handler = routes[cmd_name]
