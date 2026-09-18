@@ -1,13 +1,11 @@
 import os
+import io
 import time
 import random
 import asyncio
 import logging
-
-try:
-    from gTTS import gTTS
-except ImportError:
-    gTTS = None
+import urllib.parse
+import urllib.request
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -63,7 +61,7 @@ TARGET_LINES_EXPLICIT = [
 AUTOREPLY_LINES = [
     r"""बड़े दुःख के साथ हँसना पढ़ रहा है😂  𝐓ᴜ तेरी माँ रंडी 🤍😅🔥""",
     r"""𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯 😂👯😂👯😂👯 😂👯😂👯😂👯""",
-    r"""𝙏𝙀𝙍𝙄 𝙈𝘼 𝑑𝙄𝘿🇭🇻𝘼 𝙋𝙀𝙉𝙎𝙄𝙊𝙉 𝙃𝘼𝙉𝙀 𝙒𝘼𝙇𝙄 𝙍𝙉𝘿𝙄 🤣"""
+    r"""𝙏𝙀𝙍𝙄 𝙈𝘼 𝑑🇮🇩🇭🇻𝘼 𝙋𝙀𝙉𝙎𝙄𝙊𝙉 𝙃𝘼𝙉𝙀 𝙒𝘼𝙇𝙄 𝙍𝙉𝘿𝙄 🤣"""
 ]
 
 FLOOD_LINES = [
@@ -209,7 +207,7 @@ def get_menu_text(page: int):
             "• +tts <text> — Hindi Voice\n"
             "• +ttshi <text> — Hindi Voice\n"
             "• +ttsen <text> — English Voice\n"
-            "• +ttsjap <text> — Japanese Voice\n"
+            "• +ttsjap <text> — Japanese Voice (Anime Female)\n"
             "• +ttsgerman <text> — German Voice"
         )
     elif page == 5:
@@ -360,46 +358,47 @@ async def cmd_stopflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del chat_data["tasks"]["flood"]
         await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Flood stopped.")
 
-# --- Multi-Language TTS Section ---
+# --- Zero-Dependency In-Memory Audio Engine ---
 
-async def generate_and_send_tts(chat_id, text, lang, context):
-    if gTTS is None:
-        return await context.bot.send_message(chat_id=chat_id, text=f"🔊 TTS Voice ({lang}): {text}")
+async def generate_and_send_tts(update: Update, context: ContextTypes.DEFAULT_TYPE, lang: str):
+    text = " ".join(update.message.text.split()[1:])
+    if not text:
+        return await update.message.reply_text(f"Usage: +tts{lang} <text>")
+    
     try:
-        tts = gTTS(text=text, lang=lang)
-        file_name = f"tts_{random.randint(1000, 9999)}.mp3"
-        tts.save(file_name)
-        with open(file_name, "rb") as voice_file:
-            await context.bot.send_voice(chat_id=chat_id, voice=voice_file)
-        if os.path.exists(file_name):
-            os.remove(file_name)
+        encoded_text = urllib.parse.quote(text)
+        url = f"https://translate.google.com/translate_tts?ie=UTF-8&q={encoded_text}&tl={lang}&client=tw-ob"
+        
+        req = urllib.request.Request(url, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
+        })
+        
+        with urllib.request.urlopen(req) as response:
+            audio_bytes = io.BytesIO(response.read())
+            audio_bytes.name = "voice.mp3"
+            
+        await context.bot.send_voice(
+            chat_id=update.effective_chat.id,
+            voice=audio_bytes,
+            reply_to_message_id=update.message.message_id
+        )
     except Exception as e:
-        await context.bot.send_message(chat_id=chat_id, text=f"🔊 TTS Error: {str(e)}")
+        await update.message.reply_text(f"❌ TTS Error: {str(e)}")
 
 async def cmd_tts(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = " ".join(update.message.text.split()[1:])
-    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +tts <text>")
-    await generate_and_send_tts(update.effective_chat.id, text, "hi", context)
+    await generate_and_send_tts(update, context, "hi")
 
 async def cmd_ttshi(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = " ".join(update.message.text.split()[1:])
-    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +ttshi <text>")
-    await generate_and_send_tts(update.effective_chat.id, text, "hi", context)
+    await generate_and_send_tts(update, context, "hi")
 
 async def cmd_ttsen(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = " ".join(update.message.text.split()[1:])
-    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +ttsen <text>")
-    await generate_and_send_tts(update.effective_chat.id, text, "en", context)
+    await generate_and_send_tts(update, context, "en")
 
 async def cmd_ttsjap(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = " ".join(update.message.text.split()[1:])
-    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +ttsjap <text>")
-    await generate_and_send_tts(update.effective_chat.id, text, "ja", context)
+    await generate_and_send_tts(update, context, "ja")
 
 async def cmd_ttsgerman(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = " ".join(update.message.text.split()[1:])
-    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +ttsgerman <text>")
-    await generate_and_send_tts(update.effective_chat.id, text, "de", context)
+    await generate_and_send_tts(update, context, "de")
 
 # --- Dynamic Cluster Leave Commands ---
 
