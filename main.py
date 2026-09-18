@@ -26,7 +26,7 @@ AUTHORIZED_ADMINS = set([8821066459, OWNER_ID])
 GBANNED_USERS = set()
 CHAT_TASKS = {}
 
-# Global Cluster Instances Storage
+# Global Cluster Storage
 BOT_INSTANCES = []
 
 # Global Reaction State across all bot instances
@@ -283,9 +283,9 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
         titles = [f"⚡ {name} ⚡", f"🔥 {name} 🔥", f"👑 {name} 👑"]
         title_idx = 0
         bot_idx = 0
-        total_bots = len(BOT_INSTANCES)
+        total_bots = max(1, len(BOT_INSTANCES))
         while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
+            current_bot = BOT_INSTANCES[bot_idx % total_bots] if BOT_INSTANCES else context.bot
             try:
                 await current_bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[title_idx % len(titles)])
                 title_idx += 1
@@ -295,7 +295,7 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     task = asyncio.create_task(multi_gcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚔️ All {len(BOT_INSTANCES)} Cluster Bots engaged in GCNC Loop (Speed: {speed}s).")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚔️ Cluster Bots engaged in GCNC Loop (Speed: {speed}s).")
 
 async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -321,9 +321,9 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def multi_vgcnc_loop():
         title_idx = 0
         bot_idx = 0
-        total_bots = len(BOT_INSTANCES)
+        total_bots = max(1, len(BOT_INSTANCES))
         while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
+            current_bot = BOT_INSTANCES[bot_idx % total_bots] if BOT_INSTANCES else context.bot
             try:
                 await current_bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[title_idx % len(titles)])
                 title_idx += 1
@@ -333,7 +333,7 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     task = asyncio.create_task(multi_vgcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚡ All {len(BOT_INSTANCES)} Cluster Bots engaged in VGCNC Rotator (Speed: {speed}s).")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚡ Cluster Bots engaged in VGCNC Rotator (Speed: {speed}s).")
 
 async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
@@ -351,9 +351,9 @@ async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     async def multi_spam_loop():
         bot_idx = 0
-        total_bots = len(BOT_INSTANCES)
+        total_bots = max(1, len(BOT_INSTANCES))
         while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
+            current_bot = BOT_INSTANCES[bot_idx % total_bots] if BOT_INSTANCES else context.bot
             try: await current_bot.send_message(chat_id=update.effective_chat.id, text=text)
             except Exception: pass
             bot_idx += 1
@@ -379,9 +379,9 @@ async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     async def multi_target_loop():
         bot_idx = 0
-        total_bots = len(BOT_INSTANCES)
+        total_bots = max(1, len(BOT_INSTANCES))
         while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
+            current_bot = BOT_INSTANCES[bot_idx % total_bots] if BOT_INSTANCES else context.bot
             line = random.choice(TARGET_LINES)
             try: await current_bot.send_message(chat_id=update.effective_chat.id, text=f"{user}\n{line}")
             except Exception: pass
@@ -401,9 +401,9 @@ async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     async def multi_vtarget_loop():
         bot_idx = 0
-        total_bots = len(BOT_INSTANCES)
+        total_bots = max(1, len(BOT_INSTANCES))
         while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
+            current_bot = BOT_INSTANCES[bot_idx % total_bots] if BOT_INSTANCES else context.bot
             try: await current_bot.send_message(chat_id=update.effective_chat.id, text=f"{user} {custom_text}")
             except Exception: pass
             bot_idx += 1
@@ -428,10 +428,10 @@ async def cmd_flood(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     async def multi_flood_loop():
         bot_idx = 0
-        total_bots = len(BOT_INSTANCES)
+        total_bots = max(1, len(BOT_INSTANCES))
         while True:
             for line in FLOOD_LINES:
-                current_bot = BOT_INSTANCES[bot_idx % total_bots]
+                current_bot = BOT_INSTANCES[bot_idx % total_bots] if BOT_INSTANCES else context.bot
                 try: await current_bot.send_message(chat_id=update.effective_chat.id, text=f"{user}\n{line}")
                 except Exception: pass
                 bot_idx += 1
@@ -450,9 +450,9 @@ async def cmd_vflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     async def multi_vflood_loop():
         bot_idx = 0
-        total_bots = len(BOT_INSTANCES)
+        total_bots = max(1, len(BOT_INSTANCES))
         while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
+            current_bot = BOT_INSTANCES[bot_idx % total_bots] if BOT_INSTANCES else context.bot
             try: await current_bot.send_message(chat_id=update.effective_chat.id, text=f"🌊 {user} {text}")
             except Exception: pass
             bot_idx += 1
@@ -478,9 +478,9 @@ async def cmd_gcpfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     async def multi_photo_loop():
         bot_idx = 0
-        total_bots = len(BOT_INSTANCES)
+        total_bots = max(1, len(BOT_INSTANCES))
         while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
+            current_bot = BOT_INSTANCES[bot_idx % total_bots] if BOT_INSTANCES else context.bot
             try: await current_bot.set_chat_photo(chat_id=update.effective_chat.id, photo=file_id)
             except Exception: pass
             bot_idx += 1
@@ -506,9 +506,9 @@ async def cmd_voiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     async def multi_voice_loop():
         bot_idx = 0
-        total_bots = len(BOT_INSTANCES)
+        total_bots = max(1, len(BOT_INSTANCES))
         while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
+            current_bot = BOT_INSTANCES[bot_idx % total_bots] if BOT_INSTANCES else context.bot
             try: await current_bot.send_voice(chat_id=update.effective_chat.id, voice=file_id)
             except Exception: pass
             bot_idx += 1
@@ -541,7 +541,6 @@ async def cmd_ht(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
     get_chat_data(update.effective_chat.id)["muted"].add(target_id)
-    
     target_mention = f"@{target_user.username}" if (target_user and target_user.username) else f"`{target_id}`"
     
     keyboard = InlineKeyboardMarkup([
@@ -858,8 +857,6 @@ async def cmd_leavekrishslayin(update: Update, context: ContextTypes.DEFAULT_TYP
     
     for bot in BOT_INSTANCES:
         try:
-            me = await bot.get_me()
-            # Retain Main bot if preferred or leave all
             await bot.leave_chat(chat_id=update.effective_chat.id)
         except Exception: pass
 
@@ -1037,7 +1034,6 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
 
     # Command Execution Engine
     if is_valid_cmd:
-        # Restrict Main-Bot ONLY commands
         if cmd_name in MAIN_BOT_ONLY_COMMANDS and not is_main_bot:
             return
 
