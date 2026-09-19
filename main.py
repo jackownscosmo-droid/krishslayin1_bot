@@ -37,19 +37,30 @@ BOT_INSTANCES = []
 
 # Global Reaction State across all bot instances
 GLOBAL_CHAT_REACT_MODE = {}
-
 REACTION_EMOJI = "🤣"
 
-# Commands exclusive ONLY to Main Bot
-MAIN_BOT_ONLY_COMMANDS = {
-    "menu", "start", "panel", "mute", "unmute", "mutelist", 
-    "gban", "ungban", "slayinpowergifted", "slayinpowertaken",
-    "cluster", "getid", "ht", "leave", "leavekrishslayin"
-}
+# --- NEW: 15 Lines Target Array ---
+TARGET_15_LINES = [
+    "Clap करो रंडीबाले ne joke mara h 😂👋🏻😂👋🏻😂👋🏻😂👋🏻😂👋🏻😂👋🏻",
+    "चलेगी toh teri लंगड़ी maa 😁🔥😂👋🏻😂😂🔥🔥",
+    "तेरी maa rundy 😜🙀⚡तेरी maa rundy 😜🙀⚡",
+    "Oye message mat kar warna ᴛᴇʀɪ ᴍᴀᴀ ᴄʜᴏᴅ dunga🤣🤣",
+    "अच्छा teri maa के बूब्स पे green veins h इसलिए tu itna खिलसता h 😂👏🏻",
+    "𝐄ɴᴛʀʏ 𝐋ᴇʟɪ 𝐓ᴏ 𝐀sᴍᴀɴ 𝐊ɪ 𝐔ᴄʜᴀɪᴏ 𝐏ᴇ 𝐓ᴇʀɪ 𝐌ᴀ 𝐂ʜᴜᴅᴇɢɪ / 🌘🕊️",
+    "Teri Maa Ko Football ⚽ bnake uske 𝗕𝗛😈𝗦𝗗𝗘 pe laat 🦶🏻 marunga 🤩🔥",
+    "Tri maa ke bosde pr jcb se khudai krwa duga rndyke😂😂🤟💥💥🤟",
+    "Le धमाकेदार mukka kha रन्डी ke चाइल्ड 👊🏻👊🏻👊🏻🤣🤣",
+    "चाल चल teri chudai डॉन hogyi !! Ab teri लंगड़ी maa दौड़ेगी 😂👋🏻",
+    "subha ho ya sham chudte rhena hai tera kaam😂🔥😂🔥😂🔥",
+    "randy pane me to teri ma aval darje ki hakdaar he😁👍😁👍😁👍😁👍",
+    "𝘿𝙃𝘼𝙏 ʳⁿᵈⁱᵏᵉʸ 🤦🏿‍♂️💢𝘿𝙃𝘼𝙏 ʳⁿᵈⁱᵏᵉʸ 🤦🏿‍♂️💢",
+    "ᗷᑌᖇ ᗪᗴᗪO Tᑌᕼᗩᖇ ᗰᗩIYᗩ Kᗴ 😂💔🤤🫦👅🤡",
+    "𝐓ᴇʀɪ 𝐌ᴀᴀ 𝐂ʜᴜᴅᴋᴇ 𝐁ʜᴀᴀɢ 𝐑ᴀʜɪ -> 🏃🏻‍♀️🔥🤸🏻‍♀️🔥🏃🏻‍♀️🔥🤸🏻‍♀️🔥"
+]
 
 AUTOREPLY_LINES = [
     r"""बड़े दुःख के साथ हँसना पढ़ रहा है😂  𝐓ᴜ तेरी माँ रंडी 🤍😅🔥""",
-    r"""𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯 😂👯😂👯😂👯 😂👯😂👯😂👯""",
+    r"""𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯😂👯""",
     r"""𝙏𝙀𝙍𝙄 𝙈𝘼 𝑑𝙄𝘿🇭🇻𝘼 𝙋𝙀𝙉𝙎𝙄𝙊𝙉 𝙃𝘼𝙉𝙀 𝙒𝘼𝙇𝙄 𝙍𝙉𝘿𝙄 🤣""",
     r"""तेरी maa की chut में ऐसा HACK lgaunga Light की speed में बच्चे देगी""",
     r"""𝑩𝑯𝑨𝑮 𝑹𝑨𝑵𝑫𝒀𝑲𝑬 𝑻𝑬𝑹𝑰 𝑴𝑨 𝑪𝑯𝑼𝑫𝑹𝑰 𝑯𝑨𝑰 ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️ᯓ🏃🏻‍♀️‍➡️""",
@@ -86,10 +97,17 @@ VALID_COMMANDS = {
     "stripmedia", "stopstripmedia", "pfpstripper", "autoreply",
     "vautoreply", "stopautoreply", "reptts", "stopreptts",
     "clean", "togglereactall", "togglereact", "stopall",
-    "scan", "ping", "getid", "status", "omg", "tts",
+    "scan", "ping", "getid", "status", "omg", "tts", 
+    "ttshi", "ttsen", "ttsjap", "ttsgerman", 
     "roasthi", "roasteng", "cluster", "broadcast",
     "slayinpowergifted", "slayinpowertaken", "slayinfor",
     "gban", "ungban", "ht", "leave", "leavekrishslayin"
+}
+
+MAIN_BOT_ONLY_COMMANDS = {
+    "menu", "start", "panel", "mute", "unmute", "mutelist", 
+    "gban", "ungban", "slayinpowergifted", "slayinpowertaken",
+    "cluster", "getid", "ht", "leave", "leavekrishslayin"
 }
 
 def get_chat_data(chat_id):
@@ -100,7 +118,8 @@ def get_chat_data(chat_id):
             "stripmedia": set(),
             "pfpstripper": False,
             "autoreply": {},
-            "reptts": set()
+            "reptts": set(),
+            "vtarget_trap": {}
         }
     return CHAT_TASKS[chat_id]
 
@@ -114,8 +133,6 @@ async def send_log(context: ContextTypes.DEFAULT_TYPE, text: str):
         except Exception as e:
             logging.error(f"Failed to send log: {e}")
 
-# --- Universal Reset & Absolute Stop ---
-
 async def hard_stop_all(chat_id: int, context: ContextTypes.DEFAULT_TYPE, user_id: int):
     chat_data = get_chat_data(chat_id)
     
@@ -127,6 +144,7 @@ async def hard_stop_all(chat_id: int, context: ContextTypes.DEFAULT_TYPE, user_i
     chat_data["stripmedia"].clear()
     chat_data["autoreply"].clear()
     chat_data["reptts"].clear()
+    chat_data["vtarget_trap"].clear()
     chat_data["pfpstripper"] = False
     GLOBAL_CHAT_REACT_MODE[chat_id] = None
 
@@ -172,8 +190,8 @@ def get_menu_text(page: int):
             "• +vgcnc [spd] <Title 1 | Title 2> — Title rotator\n"
             "• +stopgcnc — Halt active title loop\n"
             "• +target <user> — Mention loop\n"
-            "• +vtarget <user> <text> — Custom mention loop\n"
-            "• +stoptarget — Disarm targeting loop\n"
+            "• +vtarget <@user> <@bots...> — Advanced 15-reply target trap\n"
+            "• +stoptarget — Disarm targeting loops\n"
             "• +spam <text> — Multi-bot high-speed spam\n"
             "• +stopspam — EMERGENCY KILL-SWITCH (STOPS EVERYTHING)\n"
             "• +flood <user> — Mention flood\n"
@@ -201,7 +219,7 @@ def get_menu_text(page: int):
             "• +stopautoreply — Disarm auto-reply\n"
             "• +reptts <user> — Voice trap\n"
             "• +stopreptts — Disarm voice trap\n"
-            "• +clean [count] — Purge recent messages\n"
+            "• +clean [count] — Purge recent messages (up to 2000)\n"
             "• +togglereactall — Toggle reactions for ALL users\n"
             "• +togglereact — Toggle reactions for ADMINS ONLY\n"
             "• +stopall — Emergency Kill Switch"
@@ -215,7 +233,8 @@ def get_menu_text(page: int):
             "• +getid — Fetch numeric ID\n"
             "• +status — Cluster state\n"
             "• +omg — Extract view-once media to PM\n"
-            "• +tts <text> — Text to speech\n"
+            "• +tts <text> — Voice Note TTS (default HI)\n"
+            "• +ttshi/ttsen/ttsjap/ttsgerman <text> — Custom Language Voice Notes\n"
             "• +roasthi <user> — Hindi roast\n"
             "• +roasteng <user> — English roast"
         )
@@ -265,8 +284,7 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         page = int(data.split("_")[1])
         await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page), parse_mode="Markdown")
 
-# --- Multi-Bot Cluster Combat Commands ---
-# (Baaki sabhi functions same rahenge... is code ko seedha run kar lijiye)
+# --- Combat Commands ---
 
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -398,31 +416,74 @@ async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
-    args = update.message.text.split()[1:]
-    if len(args) < 2: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +vtarget <user> <text>")
-    user, custom_text = args[0], " ".join(args[1:])
+    text_lower = update.message.text.lower()
+    
+    reply = update.message.reply_to_message
+    target_id = None
+    target_username = None
+
+    if reply and reply.from_user:
+        target_id = reply.from_user.id
+        target_username = reply.from_user.username.lower() if reply.from_user.username else None
+    else:
+        args = update.message.text.split()[1:]
+        # Extract first non-bot username/id
+        for arg in args:
+            is_bot = False
+            for b in BOT_INSTANCES:
+                me = await b.get_me()
+                if arg.replace("@", "").lower() == me.username.lower():
+                    is_bot = True
+                    break
+            if not is_bot:
+                target_id = arg.lower().replace("@", "")
+                break
+
+    if not target_id:
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Target specify karo! (Reply or @username)")
+
+    my_me = await context.bot.get_me()
+    my_username = my_me.username.lower()
+    
+    # Check if any bots are specifically tagged
+    tagged_bots = []
+    for b in BOT_INSTANCES:
+        me = await b.get_me()
+        if f"@{me.username.lower()}" in text_lower:
+            tagged_bots.append(me.username.lower())
+            
+    # If bots are tagged but this bot is NOT in the list, ignore it
+    if tagged_bots and my_username not in tagged_bots:
+        return
+
     chat_data = get_chat_data(update.effective_chat.id)
-    if "target" in chat_data["tasks"]: chat_data["tasks"]["target"].cancel()
+    if "vtarget_trap" not in chat_data:
+        chat_data["vtarget_trap"] = {}
+        
+    chat_data["vtarget_trap"][target_id] = True
+    if target_username:
+        chat_data["vtarget_trap"][target_username] = True
 
-    async def multi_vtarget_loop():
-        bot_idx = 0
-        total_bots = len(BOT_INSTANCES)
-        while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
-            try: await current_bot.send_message(chat_id=update.effective_chat.id, text=f"{user} {custom_text}")
-            except Exception: pass
-            bot_idx += 1
-            await asyncio.sleep(0.2)
-
-    task = asyncio.create_task(multi_vtarget_loop())
-    chat_data["tasks"]["target"] = task
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, 
+        text=f"🎯 Advanced 15-Swipe Trap Activated on target by @{my_username}!"
+    )
 
 async def cmd_stoptarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
+    stopped = False
+    
     if "target" in chat_data["tasks"]:
         chat_data["tasks"]["target"].cancel()
         del chat_data["tasks"]["target"]
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Targeting disarmed.")
+        stopped = True
+        
+    if "vtarget_trap" in chat_data and chat_data["vtarget_trap"]:
+        chat_data["vtarget_trap"].clear()
+        stopped = True
+        
+    if stopped:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 All Targeting and 15-Swipe Traps disarmed.")
 
 async def cmd_flood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -656,16 +717,33 @@ async def cmd_stopreptts(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
-    count = int(args[0]) if args and args[0].isdigit() else 10
+    count = int(args[0]) if args and args[0].isdigit() else 100
+    if count > 2000:
+        count = 2000
+    
     msg_id = update.message.message_id
+    message_ids = [msg_id - i for i in range(count + 1)]
     deleted = 0
-    for i in range(count + 1):
+    
+    status = await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🧹 Purging up to {count} messages... (Superfast Mode)")
+
+    # Delete in batches of 100 (API limit)
+    for i in range(0, len(message_ids), 100):
+        chunk = message_ids[i:i+100]
         try:
-            await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=msg_id - i)
-            deleted += 1
-        except Exception: pass
-    status = await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🧹 Purged {deleted} messages.")
-    await asyncio.sleep(2)
+            await context.bot.delete_messages(chat_id=update.effective_chat.id, message_ids=chunk)
+            deleted += len(chunk)
+        except Exception:
+            # Fallback agar bulk delete fail ho
+            for mid in chunk:
+                try:
+                    await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=mid)
+                    deleted += 1
+                except Exception: pass
+        await asyncio.sleep(0.4)
+        
+    await status.edit_text(f"✅ Successfully purged {deleted} messages (Including GC events).")
+    await asyncio.sleep(3)
     try: await status.delete()
     except Exception: pass
 
@@ -743,17 +821,31 @@ async def cmd_omg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await status_msg.edit_text(f"❌ Extraction Error: {str(e)}")
 
-async def cmd_tts(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# --- Fixed Voice Note Commands ---
+async def cmd_tts_lang(update: Update, context: ContextTypes.DEFAULT_TYPE, lang: str):
     text = " ".join(update.message.text.split()[1:])
-    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +tts <text>")
+    if not text: 
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Error: Message mein text likhein!")
     if gTTS is None:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🔊 TTS Voice: {text}")
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🔊 [No gTTS] {text}")
+    
     try:
-        tts = gTTS(text=text, lang="hi")
-        tts.save("tts.mp3")
-        await context.bot.send_voice(chat_id=update.effective_chat.id, voice=open("tts.mp3", "rb"))
-    except Exception:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🔊 TTS Voice: {text}")
+        tts = gTTS(text=text, lang=lang)
+        filename = f"tts_{update.effective_chat.id}_{random.randint(1,1000)}.mp3"
+        tts.save(filename)
+        
+        with open(filename, "rb") as audio:
+            await context.bot.send_voice(chat_id=update.effective_chat.id, voice=audio)
+            
+        os.remove(filename)
+    except Exception as e:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Voice Error: {str(e)}")
+
+async def cmd_tts(update, context): await cmd_tts_lang(update, context, "hi")
+async def cmd_ttshi(update, context): await cmd_tts_lang(update, context, "hi")
+async def cmd_ttsen(update, context): await cmd_tts_lang(update, context, "en")
+async def cmd_ttsjap(update, context): await cmd_tts_lang(update, context, "ja") # By default girl voice in Google
+async def cmd_ttsgerman(update, context): await cmd_tts_lang(update, context, "de")
 
 async def cmd_roasthi(update: Update, context: ContextTypes.DEFAULT_TYPE):
     args = update.message.text.split()[1:]
@@ -932,7 +1024,28 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     if user_id in chat_data["stripmedia"] and (update.message.photo or update.message.video or update.message.document):
         try: return await update.message.delete()
         except Exception: pass
+        
+    # --- VTARGET TRAP EXECUTION (15 SWIPE REPLY) ---
+    if "vtarget_trap" in chat_data and chat_data["vtarget_trap"]:
+        trap_active = False
+        if str(user_id) in chat_data["vtarget_trap"]: trap_active = True
+        elif username and username in chat_data["vtarget_trap"]: trap_active = True
+        
+        if trap_active:
+            async def fire_15_replies():
+                for _ in range(15):
+                    line = random.choice(TARGET_15_LINES)
+                    try:
+                        await context.bot.send_message(
+                            chat_id=chat_id,
+                            text=line,
+                            reply_to_message_id=update.message.message_id
+                        )
+                        await asyncio.sleep(0.3)
+                    except Exception: pass
+            asyncio.create_task(fire_15_replies())
 
+    # Regular Autoreply Logic
     autoreply_map = chat_data.get("autoreply", {})
     if user_id in autoreply_map or username in autoreply_map:
         target_key = user_id if user_id in autoreply_map else username
@@ -949,8 +1062,11 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     if user_id in chat_data["reptts"] and text and gTTS is not None:
         try:
             tts = gTTS(text=text, lang="hi")
-            tts.save("reptts.mp3")
-            await context.bot.send_voice(chat_id=chat_id, voice=open("reptts.mp3", "rb"))
+            fname = f"rt_{chat_id}_{random.randint(1,1000)}.mp3"
+            tts.save(fname)
+            with open(fname, "rb") as f:
+                await context.bot.send_voice(chat_id=chat_id, voice=f)
+            os.remove(fname)
         except Exception: pass
 
     react_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
@@ -992,7 +1108,8 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "reptts": cmd_reptts, "stopreptts": cmd_stopreptts,
             "clean": cmd_clean, "togglereactall": cmd_togglereactall, "togglereact": cmd_togglereact, "stopall": cmd_stopall,
             "scan": cmd_scan, "ping": cmd_ping, "getid": cmd_getid, "status": cmd_status,
-            "omg": cmd_omg, "tts": cmd_tts,
+            "omg": cmd_omg, "tts": cmd_tts, 
+            "ttshi": cmd_ttshi, "ttsen": cmd_ttsen, "ttsjap": cmd_ttsjap, "ttsgerman": cmd_ttsgerman,
             "roasthi": cmd_roasthi, "roasteng": cmd_roasteng,
             "cluster": cmd_cluster, "broadcast": cmd_broadcast,
             "slayinpowergifted": cmd_slayinpowergifted, "slayinpowertaken": cmd_slayinpowertaken,
