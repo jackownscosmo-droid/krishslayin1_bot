@@ -11,7 +11,7 @@ if sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
 try:
-    from gtts import gTTS # FIXED: small 'gtts'
+    from gtts import gTTS
 except ImportError:
     gTTS = None
 
@@ -104,11 +104,8 @@ VALID_COMMANDS = {
     "gban", "ungban", "ht", "leave", "leavekrishslayin"
 }
 
-MAIN_BOT_ONLY_COMMANDS = {
-    "menu", "start", "panel", "mute", "unmute", "mutelist", 
-    "gban", "ungban", "slayinpowergifted", "slayinpowertaken",
-    "cluster", "getid", "ht", "leave", "leavekrishslayin"
-}
+# HACK FIX: Saari commands ab bas main bot process karega taaki zombie tasks na banein aur command collisions (0 delete wali problem) theek ho jaye.
+MAIN_BOT_ONLY_COMMANDS = VALID_COMMANDS
 
 def get_chat_data(chat_id):
     if chat_id not in CHAT_TASKS:
@@ -282,7 +279,6 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         return await query.edit_message_text("🚨 ALL ACTIVE TASKS & TRAPS TERMINATED 100%.", reply_markup=get_menu_keyboard(1))
     elif data.startswith("menu_"):
         page = int(data.split("_")[1])
-        # FIXED: Removed parse_mode="Markdown" here to prevent menu failing to open due to special characters
         await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page))
 
 # --- Combat Commands ---
@@ -315,7 +311,8 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 title_idx += 1
             except Exception: pass
             bot_idx += 1
-            await asyncio.sleep(speed)
+            # Allows 0.0s delay safely without locking event loop
+            await asyncio.sleep(speed if speed > 0 else 0.05)
 
     task = asyncio.create_task(multi_gcnc_loop())
     chat_data["tasks"]["gcnc"] = task
@@ -353,7 +350,7 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 title_idx += 1
             except Exception: pass
             bot_idx += 1
-            await asyncio.sleep(speed)
+            await asyncio.sleep(speed if speed > 0 else 0.05)
 
     task = asyncio.create_task(multi_vgcnc_loop())
     chat_data["tasks"]["gcnc"] = task
@@ -445,20 +442,14 @@ async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     my_me = await context.bot.get_me()
     my_username = my_me.username.lower()
     
-    # FIXED: Find which bots are explicitly tagged by user
     tagged_bots = []
     for b in BOT_INSTANCES:
         me = await b.get_me()
         if f"@{me.username.lower()}" in text_lower:
             tagged_bots.append(me.username.lower())
             
-    # If no bot is tagged, default to the one bot that processed this command
     if not tagged_bots:
         tagged_bots = [my_username]
-
-    # If this bot is not in the tagged list, it completely ignores the command
-    if my_username not in tagged_bots:
-        return
 
     chat_data = get_chat_data(update.effective_chat.id)
     if "vtarget_trap" not in chat_data:
@@ -468,12 +459,10 @@ async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if target_username:
         chat_data["vtarget_trap"][target_username] = tagged_bots
 
-    # Only one bot should send the confirmation message to avoid duplicate spam
-    if tagged_bots[0] == my_username:
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id, 
-            text=f"🎯 Advanced 15-Swipe Trap Activated! {len(tagged_bots)} bot(s) will attack!"
-        )
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, 
+        text=f"🎯 Advanced 15-Swipe Trap Activated! {len(tagged_bots)} bot(s) will attack!"
+    )
 
 async def cmd_stoptarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
@@ -734,7 +723,6 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
     deleted = 0
     tasks = []
     
-    # FIXED: Replaced bulk delete with superfast async delete tasks
     async def safe_delete(mid):
         nonlocal deleted
         try:
@@ -748,7 +736,7 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if len(tasks) >= 50:
             await asyncio.gather(*tasks)
             tasks = []
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.5) # Thoda delay banaya h API crash bachane k liye
             
     if tasks:
         await asyncio.gather(*tasks)
@@ -1037,7 +1025,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
         try: return await update.message.delete()
         except Exception: pass
         
-    # --- FIXED VTARGET TRAP EXECUTION (15 SWIPE REPLY) ---
+    # --- VTARGET TRAP EXECUTION (15 SWIPE REPLY) ---
     if "vtarget_trap" in chat_data and chat_data["vtarget_trap"]:
         target_key = None
         if str(user_id) in chat_data["vtarget_trap"]: 
@@ -1047,7 +1035,6 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             
         if target_key:
             allowed_bots = chat_data["vtarget_trap"][target_key]
-            # Bas yahi bots reply karenge jo tag the
             if bot_username in allowed_bots:
                 async def fire_15_replies():
                     for _ in range(15):
@@ -1086,6 +1073,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             os.remove(fname)
         except Exception: pass
 
+    # Reactions wala system pehle jaisa chalega but toggle commands siraf ek bot padhega
     react_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
     if react_mode is not None and not is_valid_cmd:
         should_react = False
@@ -1104,6 +1092,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
                 )
             except Exception: pass
 
+    # COMMAND ROUTING HACK: Ab bas MAIN bot process karega saari loops
     if is_valid_cmd:
         if cmd_name in MAIN_BOT_ONLY_COMMANDS and not is_main_bot:
             return
