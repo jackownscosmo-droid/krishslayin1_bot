@@ -454,13 +454,18 @@ async def cmd_promote1(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.promote_chat_member(
             chat_id=update.effective_chat.id,
             user_id=target_id,
+            can_manage_chat=True,
+            can_change_info=False,
             can_delete_messages=True,
+            can_restrict_members=False,
             can_invite_users=True,
             can_pin_messages=True,
             can_manage_video_chats=True,
             can_promote_members=True,
-            can_restrict_members=False,
-            is_anonymous=False
+            is_anonymous=False,
+            can_post_stories=True,
+            can_edit_stories=True,
+            can_delete_stories=True
         )
         try:
             await context.bot.set_chat_administrator_custom_title(
@@ -473,7 +478,7 @@ async def cmd_promote1(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         get_chat_data(update.effective_chat.id)["admin_levels"][target_id] = 1
         AUTHORIZED_ADMINS.add(target_id)
-        await send_auto_delete_msg(context, update.effective_chat.id, f"{target_name} promoted 🥇", delay=120)
+        await send_auto_delete_msg(context, update.effective_chat.id, f"{target_name} promoted 🥇 with full assigned rights", delay=120)
     except Exception as e:
         await send_auto_delete_msg(context, update.effective_chat.id, f"❌ Failed to promote: {str(e)}", delay=120)
 
@@ -503,13 +508,18 @@ async def cmd_promote2(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.promote_chat_member(
             chat_id=update.effective_chat.id,
             user_id=target_id,
+            can_manage_chat=True,
+            can_change_info=False,
             can_delete_messages=True,
+            can_restrict_members=False,
             can_invite_users=True,
             can_pin_messages=True,
             can_manage_video_chats=True,
             can_promote_members=False,
-            can_restrict_members=False,
-            is_anonymous=False
+            is_anonymous=False,
+            can_post_stories=True,
+            can_edit_stories=True,
+            can_delete_stories=True
         )
         try:
             await context.bot.set_chat_administrator_custom_title(
@@ -522,9 +532,9 @@ async def cmd_promote2(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         get_chat_data(update.effective_chat.id)["admin_levels"][target_id] = 2
         AUTHORIZED_ADMINS.add(target_id)
-        await send_auto_delete_msg(context, update.effective_chat.id, f"{target_name} promoted 🥈", delay=120)
+        await send_auto_delete_msg(context, update.effective_chat.id, f"{target_name} promoted 🥈 with restricted assigned rights", delay=120)
     except Exception as e:
-        await send_auto_delete_msg(context, update.effective_chat.id, f"❌ Failed to promote: {str(e)}", delay=120)
+        await send_auto_delete_msg(context, update.effective_chat.id, f"❌ Failed to promote: {str(e)}", delay=120) 
 
 async def cmd_demote(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
