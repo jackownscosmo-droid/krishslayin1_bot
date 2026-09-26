@@ -24,9 +24,16 @@ from telegram.ext import (
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 # Global Configuration
-OWNER_ID = int(os.environ.get("OWNER_ID", "8821066459"))
-MAIN_BOT_USERNAME = os.environ.get("MAIN_BOT_USERNAME", "krishslayin1_bot").lower().replace("@", "")
-LOG_CHANNEL_ID = os.environ.get("LOG_CHANNEL_ID", None)
+owner_env = os.environ.get("OWNER_ID", "8821066459").strip()
+try:
+    OWNER_ID = int(owner_env)
+except ValueError:
+    OWNER_ID = 8821066459
+
+MAIN_BOT_USERNAME = os.environ.get("MAIN_BOT_USERNAME", "krishslayin1_bot").lower().replace("@", "").strip()
+
+log_channel_env = os.environ.get("LOG_CHANNEL_ID", "").strip()
+LOG_CHANNEL_ID = log_channel_env if log_channel_env else None
 
 AUTHORIZED_ADMINS = set([8821066459, OWNER_ID])
 GBANNED_USERS = set()
@@ -181,8 +188,13 @@ async def get_active_bots_in_chat(chat_id):
     active_bots = []
     for bot in BOT_INSTANCES:
         try:
-            me = await bot.get_me()
-            member = await bot.get_chat_member(chat_id=chat_id, user_id=me.id)
+            bot_id = getattr(bot, 'bot_id', None)
+            if not bot_id:
+                me = await bot.get_me()
+                bot_id = me.id
+                bot.bot_id = bot_id
+            
+            member = await bot.get_chat_member(chat_id=chat_id, user_id=bot_id)
             if member.status in ['member', 'administrator', 'creator']:
                 active_bots.append(bot)
         except Exception:
@@ -192,7 +204,8 @@ async def get_active_bots_in_chat(chat_id):
 async def send_log(context: ContextTypes.DEFAULT_TYPE, text: str):
     if LOG_CHANNEL_ID:
         try:
-            await context.bot.send_message(chat_id=int(LOG_CHANNEL_ID), text=text, parse_mode="Markdown")
+            chat_target = int(LOG_CHANNEL_ID) if (LOG_CHANNEL_ID.startswith("-") or LOG_CHANNEL_ID.isdigit()) else LOG_CHANNEL_ID
+            await context.bot.send_message(chat_id=chat_target, text=text, parse_mode="Markdown")
         except Exception as e:
             logging.error(f"Failed to send log: {e}")
 
@@ -613,7 +626,6 @@ async def cmd_adminlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 lvl = chat_data["admin_levels"][user.id]
                 tag = "🥇" if lvl == 1 else "🥈"
                 bot_admin_lines.append(f"• {user.first_name} : Admin {tag}")
-            # Manual admins hidden as requested
 
         list_content = ["Admin List 🥈🥇\n", "━━━━━━━━━━━━━━━━━━━━━━"]
         if owner_line:
@@ -773,8 +785,8 @@ async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for arg in args:
             is_bot = False
             for b in BOT_INSTANCES:
-                me = await b.get_me()
-                if arg.replace("@", "").lower() == me.username.lower():
+                bot_un = getattr(b, 'username', '')
+                if arg.replace("@", "").lower() == bot_un:
                     is_bot = True
                     break
             if not is_bot:
@@ -784,16 +796,15 @@ async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not target_id:
         return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Please specify a target! (Reply or @username)", delay=120)
 
-    my_me = await context.bot.get_me()
-    my_username = my_me.username.lower()
+    my_username = getattr(context.bot, 'username', '')
     
     tagged_bots = []
     for b in BOT_INSTANCES:
-        me = await b.get_me()
-        if f"@{me.username.lower()}" in text_lower:
-            tagged_bots.append(me.username.lower())
+        bot_un = getattr(b, 'username', '')
+        if f"@{bot_un}" in text_lower:
+            tagged_bots.append(bot_un)
             
-    if not tagged_bots:
+    if not tagged_bots and my_username:
         tagged_bots = [my_username]
 
     chat_data = get_chat_data(update.effective_chat.id)
@@ -1287,12 +1298,12 @@ async def cmd_leave(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     found = False
     for bot in BOT_INSTANCES:
-        me = await bot.get_me()
-        if me.username.lower() == target_bot_username:
+        bot_un = getattr(bot, 'username', '')
+        if bot_un == target_bot_username:
             found = True
             try:
                 await bot.leave_chat(chat_id=update.effective_chat.id)
-                await send_auto_delete_msg(context, update.effective_chat.id, f"👋 Bot @{me.username} left the chat.", delay=120)
+                await send_auto_delete_msg(context, update.effective_chat.id, f"👋 Bot @{bot_un} left the chat.", delay=120)
             except Exception as e:
                 await send_auto_delete_msg(context, update.effective_chat.id, f"❌ Failed to leave: {e}", delay=120)
             break
@@ -1319,9 +1330,9 @@ async def cmd_cluster(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for idx, bot in enumerate(BOT_INSTANCES, start=1):
         try:
-            me = await bot.get_me()
-            node_name = f"@{me.username}"
-            is_main = (MAIN_BOT_USERNAME == "" or me.username.lower() == MAIN_BOT_USERNAME)
+            bot_un = getattr(bot, 'username', '')
+            node_name = f"@{bot_un}" if bot_un else f"Bot-{idx}"
+            is_main = (MAIN_BOT_USERNAME == "" or bot_un == MAIN_BOT_USERNAME)
             tag = "[MAIN]" if is_main else "[ONLINE]"
             
             node_lines.append(f"├─ Node-0{idx} : 🟢 {node_name} {tag}")
@@ -1395,15 +1406,25 @@ async def cmd_ungban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_log(context, f"✅ *GLOBAL UNBAN APPLIED*\nTarget: `{target_id}`\nAdmin: `{update.effective_user.id}`")
 
 async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not update.message or not update.message.from_user: return
+    if not update.message or not update.message.from_user or not update.effective_chat: return
     user_id = update.message.from_user.id
     username = update.message.from_user.username.lower() if update.message.from_user.username else ""
     chat_id = update.effective_chat.id
     chat_data = get_chat_data(chat_id)
     text = update.message.text.strip() if update.message.text else ""
 
-    bot_username = (await context.bot.get_me()).username.lower()
-    is_main_bot = (MAIN_BOT_USERNAME == "" or bot_username == MAIN_BOT_USERNAME)
+    bot_me_username = getattr(context.bot, 'username', None)
+    if not bot_me_username:
+        try:
+            me = await context.bot.get_me()
+            bot_me_username = me.username.lower()
+            context.bot.username = bot_me_username
+        except Exception:
+            bot_me_username = ""
+    else:
+        bot_me_username = bot_me_username.lower()
+
+    is_main_bot = (MAIN_BOT_USERNAME == "" or bot_me_username == MAIN_BOT_USERNAME)
 
     cmd_name = ""
     is_valid_cmd = False
@@ -1481,7 +1502,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             
         if target_key:
             allowed_bots = chat_data["vtarget_trap"][target_key]
-            if bot_username in allowed_bots:
+            if bot_me_username in allowed_bots:
                 async def fire_15_replies():
                     for _ in range(15):
                         line = random.choice(TARGET_15_LINES)
@@ -1574,35 +1595,75 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             handler = routes[cmd_name]
             await handler(update, context)
 
+async def start_healthcheck_server():
+    port = os.environ.get("PORT")
+    if not port:
+        return
+    try:
+        port = int(port)
+        async def handle_request(reader, writer):
+            try:
+                await reader.read(100)
+                response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: 2\r\n\r\nOK"
+                writer.write(response.encode('utf-8'))
+                await writer.drain()
+            except Exception:
+                pass
+            finally:
+                try:
+                    writer.close()
+                    await writer.wait_closed()
+                except Exception:
+                    pass
+
+        server = await asyncio.start_server(handle_request, '0.0.0.0', port)
+        print(f"🌐 Railway Healthcheck Web Server running on port {port}")
+    except Exception as e:
+        print(f"⚠️ Could not start healthcheck server: {e}")
+
 async def start_single_bot(token: str, bot_index: int):
-    app = ApplicationBuilder().token(token).build()
-    app.add_handler(CallbackQueryHandler(menu_callback_handler))
-    app.add_handler(ChatMemberHandler(track_member_removals, ChatMemberHandler.CHAT_MEMBER))
-    app.add_handler(MessageHandler(filters.ALL, global_message_router))
+    try:
+        app = ApplicationBuilder().token(token).build()
+        app.add_handler(CallbackQueryHandler(menu_callback_handler))
+        app.add_handler(ChatMemberHandler(track_member_removals, ChatMemberHandler.CHAT_MEMBER))
+        app.add_handler(MessageHandler(filters.ALL, global_message_router))
 
-    await app.initialize()
-    await app.start()
+        await app.initialize()
+        await app.start()
 
-    BOT_INSTANCES.append(app.bot)
-    print(f"✅ Bot #{bot_index} (@{(await app.bot.get_me()).username}) connected to Cluster.")
+        me = await app.bot.get_me()
+        app.bot.username = me.username.lower()
+        app.bot.bot_id = me.id
 
-    await app.updater.start_polling()
-    await asyncio.Event().wait()
+        BOT_INSTANCES.append(app.bot)
+        print(f"✅ Bot #{bot_index} (@{me.username}) connected to Cluster.")
+
+        await app.updater.start_polling(drop_pending_updates=True)
+        await asyncio.Event().wait()
+    except Exception as e:
+        print(f"❌ Error starting Bot #{bot_index}: {e}")
 
 async def run_all_bots():
+    # 1. Start HTTP Server for Railway Health Check if $PORT is assigned
+    await start_healthcheck_server()
+
+    # 2. Automatically load all Bot Tokens from Environment
     tokens = []
     for key, value in os.environ.items():
-        if key.startswith("BOT_TOKEN") and value.strip():
-            tokens.append(value.strip())
+        val = value.strip()
+        if ("BOT_TOKEN" in key.upper() or "TOKEN" in key.upper()) and val and ":" in val:
+            if val not in tokens:
+                tokens.append(val)
 
     if not tokens:
-        print("❌ Error: No BOT_TOKEN found in Environment Variables!")
+        print("❌ Error: No valid Telegram BOT_TOKEN found in Environment Variables!")
+        await asyncio.Event().wait()
         return
 
-    print(f"🚀 Initializing {len(tokens)} bots in Synchronized Cluster Mode...")
+    print(f"🚀 Initializing {len(tokens)} bot(s) in Synchronized Cluster Mode...")
 
     tasks = [asyncio.create_task(start_single_bot(token, idx)) for idx, token in enumerate(tokens, start=1)]
-    await asyncio.gather(*tasks)
+    await asyncio.gather(*tasks, return_exceptions=True)
 
 if __name__ == '__main__':
     try:
