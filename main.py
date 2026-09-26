@@ -39,7 +39,7 @@ BOT_INSTANCES = []
 GLOBAL_CHAT_REACT_MODE = {}
 REACTION_EMOJI = "🤣"
 
-# --- NEW: Catch Lines Array ---
+# --- Catch Lines Array ---
 CATCH_LINES = [
     "{name} 𝘽𝙃𝘼𝙂𝘼 𝘽𝙃𝘼𝙂𝘼 𝙆𝙀 𝙈𝘼𝙍𝙐𝙉𝙂𝘼 🤣🩷🙌🏾",
     "{name} 𝙃𝙊𝙎𝙃 𝙈𝙀 𝘼𝘼 𝙍𝙉𝘿𝙄𝙆𝙀",
@@ -117,7 +117,8 @@ VALID_COMMANDS = {
     "ttshi", "ttsen", "ttsjap", "ttsgerman", 
     "roasthi", "roasteng", "cluster", "broadcast",
     "slayinpowergifted", "slayinpowertaken", "slayinfor",
-    "gban", "ungban", "ht", "leave", "leavekrishslayin", "catch", "stopcatch"
+    "gban", "ungban", "ht", "leave", "leavekrishslayin", "catch", "stopcatch",
+    "lock", "unlock"
 }
 
 MAIN_BOT_ONLY_COMMANDS = VALID_COMMANDS
@@ -131,12 +132,27 @@ def get_chat_data(chat_id):
             "pfpstripper": False,
             "autoreply": {},
             "reptts": set(),
-            "vtarget_trap": {}
+            "vtarget_trap": {},
+            "catch_trap": {},
+            "media_locked": False
         }
     return CHAT_TASKS[chat_id]
 
 def is_admin(user_id):
     return user_id in AUTHORIZED_ADMINS or user_id == OWNER_ID
+
+async def get_active_bots_in_chat(chat_id):
+    """Filters cluster bots that are active members of the target chat."""
+    active_bots = []
+    for bot in BOT_INSTANCES:
+        try:
+            me = await bot.get_me()
+            member = await bot.get_chat_member(chat_id=chat_id, user_id=me.id)
+            if member.status in ['member', 'administrator', 'creator']:
+                active_bots.append(bot)
+        except Exception:
+            pass
+    return active_bots if active_bots else BOT_INSTANCES
 
 async def send_log(context: ContextTypes.DEFAULT_TYPE, text: str):
     if LOG_CHANNEL_ID:
@@ -157,7 +173,9 @@ async def hard_stop_all(chat_id: int, context: ContextTypes.DEFAULT_TYPE, user_i
     chat_data["autoreply"].clear()
     chat_data["reptts"].clear()
     chat_data["vtarget_trap"].clear()
+    chat_data["catch_trap"].clear()
     chat_data["pfpstripper"] = False
+    chat_data["media_locked"] = False
     GLOBAL_CHAT_REACT_MODE[chat_id] = None
 
     await send_log(context, f"🚨 *ABSOLUTE KILL SWITCH TRIGGERED*\nChat: `{chat_id}`\nAdmin/User: `{user_id}`")
@@ -204,7 +222,7 @@ def get_menu_text(page: int):
             "• +target [user] — Mention loop\n"
             "• +vtarget [@user] [@bots...] — Advanced 15-reply target trap\n"
             "• +stoptarget — Disarm targeting loops\n"
-            "• +catch [user] [count] — Random bot swipe attack\n"
+            "• +catch [user] [count] — Dynamic bot swipe trap on new messages\n"
             "• +stopcatch — Disarm catch trap\n"
             "• +spam [text] — Multi-bot high-speed spam\n"
             "• +stopspam — EMERGENCY KILL-SWITCH (STOPS EVERYTHING)\n"
@@ -220,6 +238,8 @@ def get_menu_text(page: int):
         return (
             "⛓️ TRAPS & TARGETING 🎯\n"
             "────────────────────────────\n"
+            "• +lock — Auto-delete all photos/videos instantly (Everyone)\n"
+            "• +unlock — Unlock media sending in chat\n"
             "• +panel — Interactive inline dashboard\n"
             "• +ht — Honeytrap (Shadow-mute with fake unmute button)\n"
             "• +mute [user] — Shadow-mute target\n"
@@ -233,7 +253,7 @@ def get_menu_text(page: int):
             "• +stopautoreply — Disarm auto-reply\n"
             "• +reptts [user] — Voice trap\n"
             "• +stopreptts — Disarm voice trap\n"
-            "• +clean [count] — Purge recent messages\n"
+            "• +clean [count] — Purge recent messages (All Users/Admins/Bots)\n"
             "• +togglereactall — Toggle reactions for ALL users\n"
             "• +togglereact — Toggle reactions for ADMINS ONLY\n"
             "• +stopall — Emergency Kill Switch"
@@ -496,66 +516,61 @@ async def cmd_stoptarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if stopped:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 All Targeting and 15-Swipe Traps disarmed.")
 
-# --- NEW: Catch Commands ---
+# --- CATCH COMMAND (Target Dynamic Message Reply) ---
 async def cmd_catch(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
     reply = update.message.reply_to_message
     
-    target_name = None
-    count = 10  # Default count
+    target_key = None
+    count = 10
 
     if reply and reply.from_user:
-        target_name = f"@{reply.from_user.username}" if reply.from_user.username else reply.from_user.first_name
+        target_key = str(reply.from_user.id)
+    elif args:
+        for arg in args:
+            if arg.isdigit():
+                count = int(arg)
+            else:
+                target_key = arg.lower().replace("@", "")
 
-    for arg in args:
-        if arg.isdigit():
-            count = int(arg)
-        else:
-            target_name = arg
-
-    if not target_name:
+    if not target_key:
         return await context.bot.send_message(
             chat_id=update.effective_chat.id, 
-            text="⚠️ Target ya number specify karo! (Reply ya +catch @user 100)"
+            text="⚠️ Target specify karo! (Reply ya +catch @user 10)"
         )
 
     chat_data = get_chat_data(update.effective_chat.id)
-    if "catch" in chat_data["tasks"]: 
-        chat_data["tasks"]["catch"].cancel()
+    if "catch_trap" not in chat_data:
+        chat_data["catch_trap"] = {}
 
-    async def catch_loop():
-        random_bot = random.choice(BOT_INSTANCES)
-        me = await random_bot.get_me()
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id, 
-            text=f"🎯 Target Locked on {target_name}. Random bot @{me.username} will fire {count} replies!"
-        )
-
-        for _ in range(count):
-            line = random.choice(CATCH_LINES).format(name=target_name)
-            try:
-                if reply:
-                    await random_bot.send_message(
-                        chat_id=update.effective_chat.id, 
-                        text=line, 
-                        reply_to_message_id=reply.message_id
-                    )
-                else:
-                    await random_bot.send_message(chat_id=update.effective_chat.id, text=line)
-                await asyncio.sleep(0.3)
-            except Exception:
-                pass
-
-    task = asyncio.create_task(catch_loop())
-    chat_data["tasks"]["catch"] = task
+    chat_data["catch_trap"][target_key] = count
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, 
+        text=f"🎯 Catch Trap Activated on {target_key}! Naye message aate hi chat me present active bot {count} lines reply karega."
+    )
 
 async def cmd_stopcatch(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
-    if "catch" in chat_data["tasks"]:
-        chat_data["tasks"]["catch"].cancel()
-        del chat_data["tasks"]["catch"]
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Catch loop disarmed.")
+    if "catch_trap" in chat_data:
+        chat_data["catch_trap"].clear()
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Catch trap disarmed.")
+
+# --- DARK LOCK COMMAND (Media Lock) ---
+async def cmd_lock(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    chat_data = get_chat_data(update.effective_chat.id)
+    chat_data["media_locked"] = True
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, 
+        text="🔒 MEDIA LOCK ACTIVATED! Koyi bhi photo/video bhejega toh auto-delete ho jayegi (Admins/Owner included)."
+    )
+
+async def cmd_unlock(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    chat_data = get_chat_data(update.effective_chat.id)
+    chat_data["media_locked"] = False
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="🔓 MEDIA LOCK DEACTIVATED!")
 
 async def cmd_flood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -786,6 +801,7 @@ async def cmd_stopreptts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     get_chat_data(update.effective_chat.id)["reptts"].clear()
     await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Voice trap disarmed.")
 
+# --- FIXED CLEAN COMMAND (Purges Owner/Admins/Bots/Users indiscriminately) ---
 async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
@@ -795,7 +811,7 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     msg_id = update.message.message_id
     
-    status = await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🧹 Purging {count} messages... (Superfast Mode)")
+    status = await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🧹 Purging {count} messages... (Superfast All-User Mode)")
 
     deleted = 0
     tasks = []
@@ -810,16 +826,16 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for i in range(count + 1):
         tasks.append(asyncio.create_task(safe_delete(msg_id - i)))
-        if len(tasks) >= 50:
+        if len(tasks) >= 40:
             await asyncio.gather(*tasks)
             tasks = []
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.2)
             
     if tasks:
         await asyncio.gather(*tasks)
 
     try:
-        await status.edit_text(f"✅ Successfully purged {deleted} messages.")
+        await status.edit_text(f"✅ Purged {deleted} messages (Owner, Admins, Bots, and Users included).")
         await asyncio.sleep(3)
         await status.delete()
     except Exception: pass
@@ -858,17 +874,18 @@ async def cmd_scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     members = await chat.get_member_count()
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"📊 CHAT MATRIX SCAN:\n• Title: {chat.title}\n• ID: {chat.id}\n• Members: {members}")
 
-# --- UPDATED: Multi-Bot Ping Command ---
+# --- RESTORED ORIGINAL PING STYLE (700ms Threshold & Image Format) ---
 async def cmd_ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     start = time.time()
     for bot in BOT_INSTANCES:
         try:
             me = await bot.get_me()
             latency = round((time.time() - start) * 1000, 2)
-            indicator = "🟢" if latency <= 1000.0 else "🔴"
+            # Threshold: < 700ms => 🟢 Green, >= 700ms => 🔴 Red
+            indicator = "🟢" if latency < 700.0 else "🔴"
             await bot.send_message(
                 chat_id=update.effective_chat.id, 
-                text=f"📡 @{me.username} PING: {latency}ms {indicator}"
+                text=f"📡 @{me.username} PING:\n{latency}ms {indicator}"
             )
         except Exception: 
             pass
@@ -1096,6 +1113,13 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
         try: await update.message.delete()
         except Exception: pass
 
+    # --- MEDIA LOCK EXECUTION (Deletes photo/video for everyone including Admins/Owner) ---
+    if chat_data.get("media_locked") and (update.message.photo or update.message.video or update.message.animation or update.message.video_note):
+        try: 
+            await context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
+            return
+        except Exception: pass
+
     if chat_data.get("pfpstripper") and update.message.new_chat_photo:
         try: 
             await context.bot.delete_message(chat_id=chat_id, message_id=update.message.message_id)
@@ -1109,7 +1133,37 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     if user_id in chat_data["stripmedia"] and (update.message.photo or update.message.video or update.message.document):
         try: return await update.message.delete()
         except Exception: pass
-        
+
+    # --- CATCH TRAP EXECUTION (Dynamic Bot Selection for Target's New Messages) ---
+    catch_trap = chat_data.get("catch_trap", {})
+    if catch_trap:
+        matched_key = None
+        if str(user_id) in catch_trap:
+            matched_key = str(user_id)
+        elif username and username in catch_trap:
+            matched_key = username
+
+        if matched_key:
+            line_count = catch_trap[matched_key]
+            active_bots = await get_active_bots_in_chat(chat_id)
+            selected_bot = random.choice(active_bots)
+
+            async def fire_catch_replies(bot_to_use, target_msg_id, num_lines):
+                display_name = f"@{username}" if username else update.message.from_user.first_name
+                for _ in range(num_lines):
+                    line = random.choice(CATCH_LINES).format(name=display_name)
+                    try:
+                        await bot_to_use.send_message(
+                            chat_id=chat_id,
+                            text=line,
+                            reply_to_message_id=target_msg_id
+                        )
+                        await asyncio.sleep(0.15)
+                    except Exception:
+                        pass
+
+            asyncio.create_task(fire_catch_replies(selected_bot, update.message.message_id, line_count))
+
     # --- VTARGET TRAP EXECUTION (15 SWIPE REPLY) ---
     if "vtarget_trap" in chat_data and chat_data["vtarget_trap"]:
         target_key = None
@@ -1187,6 +1241,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "gcnc": cmd_gcnc, "vgcnc": cmd_vgcnc, "stopgcnc": cmd_stopgcnc,
             "target": cmd_target, "vtarget": cmd_vtarget, "stoptarget": cmd_stoptarget,
             "catch": cmd_catch, "stopcatch": cmd_stopcatch,
+            "lock": cmd_lock, "unlock": cmd_unlock,
             "spam": cmd_spam, "stopspam": cmd_stopspam,
             "flood": cmd_flood, "vflood": cmd_vflood, "stopflood": cmd_stopflood,
             "gcpfp": cmd_gcpfp, "stopgcpfp": cmd_stopgcpfp,
