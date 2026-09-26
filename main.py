@@ -118,7 +118,7 @@ VALID_COMMANDS = {
     "roasthi", "roasteng", "cluster", "broadcast",
     "slayinpowergifted", "slayinpowertaken", "slayinfor",
     "gban", "ungban", "ht", "leave", "leavekrishslayin", "catch", "stopcatch",
-    "lock", "unlock", "promote0", "promote1", "demote", "kick", "adminlist"
+    "lock", "unlock", "promote1", "promote2", "demote", "kick", "adminlist"
 }
 
 MAIN_BOT_ONLY_COMMANDS = VALID_COMMANDS
@@ -135,13 +135,27 @@ def get_chat_data(chat_id):
             "vtarget_trap": {},
             "catch_trap": {},
             "media_locked": False,
-            "admin_levels": {},  # {user_id: 0 or 1}
+            "admin_levels": {},  # {user_id: 1 or 2}
             "kick_tracker": {}   # {user_id: [timestamps]}
         }
     return CHAT_TASKS[chat_id]
 
 def is_admin(user_id):
     return user_id in AUTHORIZED_ADMINS or user_id == OWNER_ID
+
+async def send_auto_delete_msg(context: ContextTypes.DEFAULT_TYPE, chat_id: int, text: str, delay: int = 120, parse_mode: str = None):
+    try:
+        msg = await context.bot.send_message(chat_id=chat_id, text=text, parse_mode=parse_mode)
+        async def auto_delete():
+            await asyncio.sleep(delay)
+            try:
+                await msg.delete()
+            except Exception:
+                pass
+        asyncio.create_task(auto_delete())
+        return msg
+    except Exception as e:
+        logging.error(f"Failed to send auto-delete message: {e}")
 
 async def is_level1_or_manual_admin(chat_id: int, user_id: int, context: ContextTypes.DEFAULT_TYPE) -> bool:
     if user_id == OWNER_ID:
@@ -150,7 +164,7 @@ async def is_level1_or_manual_admin(chat_id: int, user_id: int, context: Context
     level = chat_data["admin_levels"].get(user_id)
     if level == 1:
         return True
-    if level == 0:
+    if level == 2:
         return False
     # Check if manually assigned admin in Telegram
     try:
@@ -261,8 +275,8 @@ def get_menu_text(page: int):
             "────────────────────────────\n"
             "• +lock — Auto-delete all photos/videos instantly (Everyone)\n"
             "• +unlock — Unlock media sending in chat\n"
-            "• +promote0 — Level 2 Admin 🥈\n"
             "• +promote1 — Level 1 Admin 🥇\n"
+            "• +promote2 — Level 2 Admin 🥈\n"
             "• +demote — Strip admin rights\n"
             "• +kick — Kick member\n"
             "• +adminlist — List active group admins\n"
@@ -344,7 +358,7 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
         page = int(data.split("_")[1])
         await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page))
 
-# --- Anti-Mass Kick Tracker (Anti-Nuke) ---
+# --- Anti-Mass Kick Tracker (2 Min Rule) ---
 async def track_member_removals(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.chat_member:
         return
@@ -356,7 +370,6 @@ async def track_member_removals(update: Update, context: ContextTypes.DEFAULT_TY
     target = chat_member.new_chat_member.user
     chat_id = update.effective_chat.id
 
-    # Detect if user was kicked/removed by someone else
     if old_status in ['member', 'administrator', 'restricted'] and new_status in ['kicked', 'left']:
         if actor.id == target.id:
             return  # User left voluntarily
@@ -367,14 +380,14 @@ async def track_member_removals(update: Update, context: ContextTypes.DEFAULT_TY
         if actor.id not in chat_data["kick_tracker"]:
             chat_data["kick_tracker"][actor.id] = []
             
-        # Add current removal timestamp & clean older than 60s
         chat_data["kick_tracker"][actor.id].append(now)
-        chat_data["kick_tracker"][actor.id] = [t for t in chat_data["kick_tracker"][actor.id] if now - t <= 60]
+        # Filter removals within last 120 seconds (2 minutes)
+        chat_data["kick_tracker"][actor.id] = [t for t in chat_data["kick_tracker"][actor.id] if now - t <= 120]
         
         removal_count = len(chat_data["kick_tracker"][actor.id])
         
-        # Anti-Nuke Trigger (If > 4 removals in 60 seconds)
-        if removal_count >= 5:
+        # Trigger Anti-Nuke if 4 or more removals occur within 2 minutes
+        if removal_count >= 4:
             try:
                 # 1. Demote admin rights
                 await context.bot.promote_chat_member(
@@ -388,7 +401,8 @@ async def track_member_removals(update: Update, context: ContextTypes.DEFAULT_TY
                     can_restrict_members=False,
                     can_pin_messages=False,
                     can_promote_members=False,
-                    can_manage_video_chats=False
+                    can_manage_video_chats=False,
+                    is_anonymous=False
                 )
             except Exception:
                 pass
@@ -403,61 +417,38 @@ async def track_member_removals(update: Update, context: ContextTypes.DEFAULT_TY
             AUTHORIZED_ADMINS.discard(actor.id)
             chat_data["kick_tracker"][actor.id] = []
 
-            await context.bot.send_message(
-                chat_id=chat_id,
-                text=f"🚨 **ANTI-NUKE TRIGGERED!**\nAdmin [{actor.first_name}](tg://user?id={actor.id}) removed {removal_count} members in <60s.\n\n⚡ Action: Rights Stripped & Removed/Banned from Group!",
+            await send_auto_delete_msg(
+                context,
+                chat_id,
+                f"🚨 **ANTI-NUKE TRIGGERED!**\nUser [{actor.first_name}](tg://user?id={actor.id}) removed {removal_count} members in <2 mins.\n\n⚡ Action: Rights Stripped & Removed from Group!",
+                delay=120,
                 parse_mode="Markdown"
             )
             await send_log(context, f"🚨 *ANTI-NUKE EXECUTED*\nChat: `{chat_id}`\nPerpetrator: `{actor.id}`\nRemovals: `{removal_count}`")
 
-# --- Management & Level Promotion Commands ---
-
-async def cmd_promote0(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Only Level 1 Admins or Main Admins can use +promote0!")
-
-    reply = update.message.reply_to_message
-    args = update.message.text.split()[1:]
-    target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
-
-    if not target_id:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +promote0 (Reply to user or pass ID)")
-
-    try:
-        await context.bot.promote_chat_member(
-            chat_id=update.effective_chat.id,
-            user_id=target_id,
-            can_delete_messages=True,
-            can_invite_users=True,
-            can_pin_messages=True,
-            can_manage_video_chats=True,
-            can_promote_members=False
-        )
-        try:
-            await context.bot.set_chat_administrator_custom_title(
-                chat_id=update.effective_chat.id,
-                user_id=target_id,
-                custom_title="Level 2 Admin 🥈"
-            )
-        except Exception:
-            pass
-
-        get_chat_data(update.effective_chat.id)["admin_levels"][target_id] = 0
-        AUTHORIZED_ADMINS.add(target_id)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🥈 User {target_id} promoted to Level 2 Admin (Delete, Invite, Pin, Live Stream Rights)!")
-    except Exception as e:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to promote: {str(e)}")
+# --- Management & Promotion Commands ---
 
 async def cmd_promote1(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Only Level 1 Admins or Main Admins can use +promote1!")
+        return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Permission Denied!")
 
     reply = update.message.reply_to_message
     args = update.message.text.split()[1:]
-    target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
+    
+    target_user = reply.from_user if reply else None
+    target_id = target_user.id if target_user else (int(args[0]) if args and args[0].isdigit() else None)
 
     if not target_id:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +promote1 (Reply to user or pass ID)")
+        return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +promote1 (Reply to user or pass ID)")
+
+    try:
+        if target_user:
+            target_name = target_user.first_name
+        else:
+            member = await context.bot.get_chat_member(update.effective_chat.id, target_id)
+            target_name = member.user.first_name if member and member.user else str(target_id)
+    except Exception:
+        target_name = str(target_id)
 
     try:
         await context.bot.promote_chat_member(
@@ -467,33 +458,95 @@ async def cmd_promote1(update: Update, context: ContextTypes.DEFAULT_TYPE):
             can_invite_users=True,
             can_pin_messages=True,
             can_manage_video_chats=True,
-            can_promote_members=True
+            can_promote_members=True,
+            can_restrict_members=False,
+            is_anonymous=False
         )
         try:
             await context.bot.set_chat_administrator_custom_title(
                 chat_id=update.effective_chat.id,
                 user_id=target_id,
-                custom_title="Level 1 Admin 🥇"
+                custom_title="🥇"
             )
         except Exception:
             pass
 
         get_chat_data(update.effective_chat.id)["admin_levels"][target_id] = 1
         AUTHORIZED_ADMINS.add(target_id)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🥇 User {target_id} promoted to Level 1 Admin (Full Rights + Add New Admins)!")
+        await send_auto_delete_msg(context, update.effective_chat.id, f"{target_name} promoted 🥇", delay=120)
     except Exception as e:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to promote: {str(e)}")
+        await send_auto_delete_msg(context, update.effective_chat.id, f"❌ Failed to promote: {str(e)}", delay=120)
 
-async def cmd_demote(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def cmd_promote2(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Permission Denied!")
+        return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Permission Denied!")
 
     reply = update.message.reply_to_message
     args = update.message.text.split()[1:]
-    target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
+    
+    target_user = reply.from_user if reply else None
+    target_id = target_user.id if target_user else (int(args[0]) if args and args[0].isdigit() else None)
 
     if not target_id:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +demote (Reply to user or pass ID)")
+        return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +promote2 (Reply to user or pass ID)")
+
+    try:
+        if target_user:
+            target_name = target_user.first_name
+        else:
+            member = await context.bot.get_chat_member(update.effective_chat.id, target_id)
+            target_name = member.user.first_name if member and member.user else str(target_id)
+    except Exception:
+        target_name = str(target_id)
+
+    try:
+        await context.bot.promote_chat_member(
+            chat_id=update.effective_chat.id,
+            user_id=target_id,
+            can_delete_messages=True,
+            can_invite_users=True,
+            can_pin_messages=True,
+            can_manage_video_chats=True,
+            can_promote_members=False,
+            can_restrict_members=False,
+            is_anonymous=False
+        )
+        try:
+            await context.bot.set_chat_administrator_custom_title(
+                chat_id=update.effective_chat.id,
+                user_id=target_id,
+                custom_title="🥈"
+            )
+        except Exception:
+            pass
+
+        get_chat_data(update.effective_chat.id)["admin_levels"][target_id] = 2
+        AUTHORIZED_ADMINS.add(target_id)
+        await send_auto_delete_msg(context, update.effective_chat.id, f"{target_name} promoted 🥈", delay=120)
+    except Exception as e:
+        await send_auto_delete_msg(context, update.effective_chat.id, f"❌ Failed to promote: {str(e)}", delay=120)
+
+async def cmd_demote(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
+        return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Permission Denied!")
+
+    reply = update.message.reply_to_message
+    args = update.message.text.split()[1:]
+    
+    target_user = reply.from_user if reply else None
+    target_id = target_user.id if target_user else (int(args[0]) if args and args[0].isdigit() else None)
+
+    if not target_id:
+        return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +demote (Reply to user or pass ID)")
+
+    try:
+        if target_user:
+            target_name = target_user.first_name
+        else:
+            member = await context.bot.get_chat_member(update.effective_chat.id, target_id)
+            target_name = member.user.first_name if member and member.user else str(target_id)
+    except Exception:
+        target_name = str(target_id)
 
     try:
         await context.bot.promote_chat_member(
@@ -501,14 +554,15 @@ async def cmd_demote(update: Update, context: ContextTypes.DEFAULT_TYPE):
             user_id=target_id,
             can_change_info=False, can_post_messages=False, can_edit_messages=False,
             can_delete_messages=False, can_invite_users=False, can_restrict_members=False,
-            can_pin_messages=False, can_promote_members=False, can_manage_video_chats=False
+            can_pin_messages=False, can_promote_members=False, can_manage_video_chats=False,
+            is_anonymous=False
         )
         get_chat_data(update.effective_chat.id)["admin_levels"].pop(target_id, None)
         if target_id != OWNER_ID:
             AUTHORIZED_ADMINS.discard(target_id)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"📉 Admin rights stripped from {target_id}.")
+        await send_auto_delete_msg(context, update.effective_chat.id, f"{target_name} demoted", delay=120)
     except Exception as e:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to demote: {str(e)}")
+        await send_auto_delete_msg(context, update.effective_chat.id, f"❌ Failed to demote: {str(e)}", delay=120)
 
 async def cmd_kick(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -517,46 +571,50 @@ async def cmd_kick(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
 
     if not target_id:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +kick (Reply to user or pass ID)")
+        return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +kick (Reply to user or pass ID)")
 
     chat_data = get_chat_data(update.effective_chat.id)
     executor_level = chat_data["admin_levels"].get(update.effective_user.id)
     target_level = chat_data["admin_levels"].get(target_id)
 
-    # Hierarchy restriction
-    if executor_level == 0 and target_level is not None:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="🚫 Level 2 Admins 🥈 cannot kick other admins!")
+    if executor_level == 2 and target_level is not None:
+        return await send_auto_delete_msg(context, update.effective_chat.id, "🚫 Level 2 Admins 🥈 cannot kick other admins!")
 
     try:
         await context.bot.ban_chat_member(chat_id=update.effective_chat.id, user_id=target_id)
         await context.bot.unban_chat_member(chat_id=update.effective_chat.id, user_id=target_id)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"👢 User {target_id} has been kicked from the chat.")
+        await send_auto_delete_msg(context, update.effective_chat.id, f"👢 User {target_id} has been kicked from the chat.", delay=120)
     except Exception as e:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to kick: {str(e)}")
+        await send_auto_delete_msg(context, update.effective_chat.id, f"❌ Failed to kick: {str(e)}", delay=120)
 
 async def cmd_adminlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         admins = await context.bot.get_chat_administrators(chat_id=update.effective_chat.id)
         chat_data = get_chat_data(update.effective_chat.id)
-        lines = []
+        
+        owner_line = ""
+        bot_admin_lines = []
+
         for a in admins:
             user = a.user
-            custom_title = a.custom_title or "Admin"
-            level_tag = ""
-            if user.id in chat_data["admin_levels"]:
+            if a.status == "creator":
+                owner_line = f"• {user.first_name} : Owner 👑"
+            elif user.id in chat_data["admin_levels"]:
                 lvl = chat_data["admin_levels"][user.id]
-                level_tag = "🥇 Level 1" if lvl == 1 else "🥈 Level 2"
-            elif a.status == "creator":
-                level_tag = "👑 Owner / Creator"
-            else:
-                level_tag = "🛠️ Manual Admin"
+                tag = "🥇" if lvl == 1 else "🥈"
+                bot_admin_lines.append(f"• {user.first_name} : Admin {tag}")
+            # Manual admins hidden as requested
 
-            lines.append(f"• {user.first_name} (`{user.id}`) | {custom_title} [{level_tag}]")
+        list_content = ["Admin List 🥈🥇\n", "━━━━━━━━━━━━━━━━━━━━━━"]
+        if owner_line:
+            list_content.append(owner_line)
+        if bot_admin_lines:
+            list_content.extend(bot_admin_lines)
 
-        text = "👑 **GROUP ADMINISTRATORS LIST**:\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" + "\n".join(lines)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode="Markdown")
+        text = "\n".join(list_content)
+        await send_auto_delete_msg(context, update.effective_chat.id, text, delay=120)
     except Exception as e:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to fetch admins: {str(e)}")
+        await send_auto_delete_msg(context, update.effective_chat.id, f"❌ Failed to fetch adminlist: {str(e)}", delay=120)
 
 # --- Combat Commands ---
 
@@ -592,7 +650,7 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     task = asyncio.create_task(multi_gcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚔️ All {len(BOT_INSTANCES)} Cluster Bots engaged in GCNC Loop (Speed: {speed}s).")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"⚔️ All {len(BOT_INSTANCES)} Cluster Bots engaged in GCNC Loop (Speed: {speed}s).", delay=120)
 
 async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -610,7 +668,7 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
             titles_raw = raw_text
 
     titles = [t.strip() for t in titles_raw.split("|") if t.strip()]
-    if not titles: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +vgcnc [speed] Title 1 | Title 2")
+    if not titles: return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +vgcnc [speed] Title 1 | Title 2", delay=120)
 
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcnc" in chat_data["tasks"]: chat_data["tasks"]["gcnc"].cancel()
@@ -630,19 +688,19 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     task = asyncio.create_task(multi_vgcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚡ All {len(BOT_INSTANCES)} Cluster Bots engaged in VGCNC Rotator (Speed: {speed}s).")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"⚡ All {len(BOT_INSTANCES)} Cluster Bots engaged in VGCNC Rotator (Speed: {speed}s).", delay=120)
 
 async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcnc" in chat_data["tasks"]:
         chat_data["tasks"]["gcnc"].cancel()
         del chat_data["tasks"]["gcnc"]
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Title loop disarmed across all cluster bots.")
+        await send_auto_delete_msg(context, update.effective_chat.id, "🛑 Title loop disarmed across all cluster bots.", delay=120)
 
 async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     text = " ".join(update.message.text.split()[1:])
-    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +spam <text>")
+    if not text: return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +spam <text>", delay=120)
     chat_data = get_chat_data(update.effective_chat.id)
     if "spam" in chat_data["tasks"]: chat_data["tasks"]["spam"].cancel()
 
@@ -662,9 +720,10 @@ async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_stopspam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     await hard_stop_all(update.effective_chat.id, context, update.effective_user.id)
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, 
-        text="🛑 STRICT EMERGENCY STOP: All active tasks, spam, GCNC, traps, and loops have been KILLED instantly!"
+    await send_auto_delete_msg(
+        context, update.effective_chat.id, 
+        "🛑 STRICT EMERGENCY STOP: All active tasks, spam, GCNC, traps, and loops have been KILLED instantly!",
+        delay=120
     )
 
 async def cmd_target(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -713,7 +772,7 @@ async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 break
 
     if not target_id:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Please specify a target! (Reply or @username)")
+        return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Please specify a target! (Reply or @username)", delay=120)
 
     my_me = await context.bot.get_me()
     my_username = my_me.username.lower()
@@ -735,9 +794,10 @@ async def cmd_vtarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if target_username:
         chat_data["vtarget_trap"][target_username] = tagged_bots
 
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, 
-        text=f"🎯 Advanced 15-Swipe Trap Activated! {len(tagged_bots)} bot(s) will attack!"
+    await send_auto_delete_msg(
+        context, update.effective_chat.id, 
+        f"🎯 Advanced 15-Swipe Trap Activated! {len(tagged_bots)} bot(s) will attack!",
+        delay=120
     )
 
 async def cmd_stoptarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -754,9 +814,8 @@ async def cmd_stoptarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
         stopped = True
         
     if stopped:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 All Targeting and 15-Swipe Traps disarmed.")
+        await send_auto_delete_msg(context, update.effective_chat.id, "🛑 All Targeting and 15-Swipe Traps disarmed.", delay=120)
 
-# --- CATCH COMMAND (Target Dynamic Message Reply) ---
 async def cmd_catch(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
@@ -775,9 +834,10 @@ async def cmd_catch(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 target_key = arg.lower().replace("@", "")
 
     if not target_key:
-        return await context.bot.send_message(
-            chat_id=update.effective_chat.id, 
-            text="⚠️ Please specify a target! (Reply or +catch @user 10)"
+        return await send_auto_delete_msg(
+            context, update.effective_chat.id, 
+            "⚠️ Please specify a target! (Reply or +catch @user 10)",
+            delay=120
         )
 
     chat_data = get_chat_data(update.effective_chat.id)
@@ -785,34 +845,35 @@ async def cmd_catch(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_data["catch_trap"] = {}
 
     chat_data["catch_trap"][target_key] = count
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, 
-        text=f"🎯 Catch Trap Activated on {target_key}! A random active bot will reply with {count} lines on their next message."
+    await send_auto_delete_msg(
+        context, update.effective_chat.id, 
+        f"🎯 Catch Trap Activated on {target_key}! A random active bot will reply with {count} lines on their next message.",
+        delay=120
     )
 
 async def cmd_stopcatch(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     if "catch_trap" in chat_data:
         chat_data["catch_trap"].clear()
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Catch trap disarmed.")
+    await send_auto_delete_msg(context, update.effective_chat.id, "🛑 Catch trap disarmed.", delay=120)
 
-# --- DARK LOCK COMMAND (Media Lock Restricted to Level 1 / Manual Admins) ---
 async def cmd_lock(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Only Level 1 Admins or Main Admins can use +lock!")
+        return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Only Level 1 Admins or Main Admins can use +lock!", delay=120)
     chat_data = get_chat_data(update.effective_chat.id)
     chat_data["media_locked"] = True
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, 
-        text="🔒 MEDIA LOCK ACTIVATED! All photos/videos will be auto-deleted (including Admins/Owner)."
+    await send_auto_delete_msg(
+        context, update.effective_chat.id, 
+        "🔒 MEDIA LOCK ACTIVATED! All photos/videos will be auto-deleted.",
+        delay=120
     )
 
 async def cmd_unlock(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Only Level 1 Admins or Main Admins can use +unlock!")
+        return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Only Level 1 Admins or Main Admins can use +unlock!", delay=120)
     chat_data = get_chat_data(update.effective_chat.id)
     chat_data["media_locked"] = False
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🔓 MEDIA LOCK DEACTIVATED!")
+    await send_auto_delete_msg(context, update.effective_chat.id, "🔓 MEDIA LOCK DEACTIVATED!", delay=120)
 
 async def cmd_flood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -838,7 +899,7 @@ async def cmd_flood(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_vflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
-    if len(args) < 2: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +vflood <user> <text>")
+    if len(args) < 2: return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +vflood <user> <text>", delay=120)
     user, text = args[0], " ".join(args[1:])
     chat_data = get_chat_data(update.effective_chat.id)
     if "flood" in chat_data["tasks"]: chat_data["tasks"]["flood"].cancel()
@@ -861,12 +922,12 @@ async def cmd_stopflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "flood" in chat_data["tasks"]:
         chat_data["tasks"]["flood"].cancel()
         del chat_data["tasks"]["flood"]
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Flood stopped.")
+        await send_auto_delete_msg(context, update.effective_chat.id, "🛑 Flood stopped.", delay=120)
 
 async def cmd_gcpfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     reply = update.message.reply_to_message
-    if not reply or not reply.photo: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to an image.")
+    if not reply or not reply.photo: return await send_auto_delete_msg(context, update.effective_chat.id, "Reply to an image.", delay=120)
     file_id = reply.photo[-1].file_id
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcpfp" in chat_data["tasks"]: chat_data["tasks"]["gcpfp"].cancel()
@@ -889,12 +950,12 @@ async def cmd_stopgcpfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "gcpfp" in chat_data["tasks"]:
         chat_data["tasks"]["gcpfp"].cancel()
         del chat_data["tasks"]["gcpfp"]
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Photo loop disarmed.")
+        await send_auto_delete_msg(context, update.effective_chat.id, "🛑 Photo loop disarmed.", delay=120)
 
 async def cmd_voiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     reply = update.message.reply_to_message
-    if not reply or not (reply.voice or reply.audio): return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to audio/voice.")
+    if not reply or not (reply.voice or reply.audio): return await send_auto_delete_msg(context, update.effective_chat.id, "Reply to audio/voice.", delay=120)
     file_id = (reply.voice or reply.audio).file_id
     chat_data = get_chat_data(update.effective_chat.id)
     if "voiceflood" in chat_data["tasks"]: chat_data["tasks"]["voiceflood"].cancel()
@@ -917,7 +978,7 @@ async def cmd_stopvoiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE)
     if "voiceflood" in chat_data["tasks"]:
         chat_data["tasks"]["voiceflood"].cancel()
         del chat_data["tasks"]["voiceflood"]
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Voice flood stopped.")
+        await send_auto_delete_msg(context, update.effective_chat.id, "🛑 Voice flood stopped.", delay=120)
 
 async def cmd_ht(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -928,68 +989,69 @@ async def cmd_ht(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target_id = target_user.id if target_user else (int(args[0]) if args and args[0].isdigit() else None)
 
     if not target_id: 
-        return await context.bot.send_message(
-            chat_id=update.effective_chat.id, 
-            text="⚠️ Reply to target user's message or pass User ID."
-        )
+        return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Reply to target user's message or pass User ID.", delay=120)
 
     get_chat_data(update.effective_chat.id)["muted"].add(target_id)
-    
     target_mention = f"@{target_user.username}" if (target_user and target_user.username) else f"`{target_id}`"
     
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("🔊 Tap to Unmute Yourself", callback_data="fake_unmute")]
     ])
     
-    await context.bot.send_message(
+    msg = await context.bot.send_message(
         chat_id=update.effective_chat.id, 
         text=f"🔇 USER SHADOW-MUTED: {target_mention}",
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
+    async def auto_del():
+        await asyncio.sleep(120)
+        try: await msg.delete()
+        except Exception: pass
+    asyncio.create_task(auto_del())
 
 async def cmd_mute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     reply = update.message.reply_to_message
     args = update.message.text.split()[1:]
     target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
-    if not target_id: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target or pass User ID.")
+    if not target_id: return await send_auto_delete_msg(context, update.effective_chat.id, "Reply to target or pass User ID.", delay=120)
     get_chat_data(update.effective_chat.id)["muted"].add(target_id)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🔇 Target {target_id} shadow-muted.")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"🔇 Target {target_id} shadow-muted.", delay=120)
 
 async def cmd_unmute(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     reply = update.message.reply_to_message
     args = update.message.text.split()[1:]
     target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
-    if not target_id: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target or pass User ID.")
+    if not target_id: return await send_auto_delete_msg(context, update.effective_chat.id, "Reply to target or pass User ID.", delay=120)
     get_chat_data(update.effective_chat.id)["muted"].discard(target_id)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🔊 Target {target_id} unmuted.")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"🔊 Target {target_id} unmuted.", delay=120)
 
 async def cmd_mutelist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     muted = get_chat_data(update.effective_chat.id)["muted"]
     text = "🔇 MUTED TARGETS:\n" + "\n".join([f"• {uid}" for uid in muted]) if muted else "No muted users."
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    await send_auto_delete_msg(context, update.effective_chat.id, text, delay=120)
 
 async def cmd_stripmedia(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     reply = update.message.reply_to_message
     args = update.message.text.split()[1:]
     target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
-    if not target_id: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target or pass User ID.")
+    if not target_id: return await send_auto_delete_msg(context, update.effective_chat.id, "Reply to target or pass User ID.", delay=120)
     get_chat_data(update.effective_chat.id)["stripmedia"].add(target_id)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"✂️ Media stripper active on {target_id}.")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"✂️ Media stripper active on {target_id}.", delay=120)
 
 async def cmd_stopstripmedia(update: Update, context: ContextTypes.DEFAULT_TYPE):
     get_chat_data(update.effective_chat.id)["stripmedia"].clear()
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="✂️ Media stripper disarmed.")
+    await send_auto_delete_msg(context, update.effective_chat.id, "✂️ Media stripper disarmed.", delay=120)
 
 async def cmd_pfpstripper(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
     state = args[0].lower() == "on" if args else False
     get_chat_data(update.effective_chat.id)["pfpstripper"] = state
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🖼️ PFP Stripper: {state}")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"🖼️ PFP Stripper: {state}", delay=120)
 
 async def cmd_autoreply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -1008,40 +1070,40 @@ async def cmd_autoreply(update: Update, context: ContextTypes.DEFAULT_TYPE):
             target_username = args[0].lower().replace("@", "")
 
     if not target_id and not target_username:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target, pass User ID, or mention @username.")
+        return await send_auto_delete_msg(context, update.effective_chat.id, "Reply to target, pass User ID, or mention @username.", delay=120)
 
     target_key = target_id if target_id else target_username
     get_chat_data(update.effective_chat.id)["autoreply"][target_key] = "RANDOM_LINES"
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🤖 Auto-reply trap active on {args[0] if args else target_id}.")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"🤖 Auto-reply trap active on {args[0] if args else target_id}.", delay=120)
 
 async def cmd_vautoreply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
-    if len(args) < 2: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +vautoreply <user/id/@username> <msg>")
+    if len(args) < 2: return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +vautoreply <user/id/@username> <msg>", delay=120)
     
     target_input = args[0]
     msg = " ".join(args[1:])
     target_key = int(target_input) if target_input.isdigit() else target_input.lower().replace("@", "")
 
     get_chat_data(update.effective_chat.id)["autoreply"][target_key] = msg
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🤖 Custom auto-reply trap active on {target_input}.")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"🤖 Custom auto-reply trap active on {target_input}.", delay=120)
 
 async def cmd_stopautoreply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     get_chat_data(update.effective_chat.id)["autoreply"].clear()
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Auto-reply trap disarmed.")
+    await send_auto_delete_msg(context, update.effective_chat.id, "🛑 Auto-reply trap disarmed.", delay=120)
 
 async def cmd_reptts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     reply = update.message.reply_to_message
     args = update.message.text.split()[1:]
     target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
-    if not target_id: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target or pass User ID.")
+    if not target_id: return await send_auto_delete_msg(context, update.effective_chat.id, "Reply to target or pass User ID.", delay=120)
     get_chat_data(update.effective_chat.id)["reptts"].add(target_id)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🗣️ Voice trap active on {target_id}.")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"🗣️ Voice trap active on {target_id}.", delay=120)
 
 async def cmd_stopreptts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     get_chat_data(update.effective_chat.id)["reptts"].clear()
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Voice trap disarmed.")
+    await send_auto_delete_msg(context, update.effective_chat.id, "🛑 Voice trap disarmed.", delay=120)
 
 async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -1051,7 +1113,6 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
         count = 2000
     
     msg_id = update.message.message_id
-    
     status = await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🧹 Purging {count} messages... (Superfast All-User Mode)")
 
     deleted = 0
@@ -1069,7 +1130,7 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await asyncio.sleep(0.1)
 
     try:
-        await status.edit_text(f"✅ Successfully purged {deleted} messages (Owner, Admins, Bots, and Users included).")
+        await status.edit_text(f"✅ Successfully purged {deleted} messages.")
         await asyncio.sleep(3)
         await status.delete()
     except Exception: pass
@@ -1081,10 +1142,10 @@ async def cmd_togglereactall(update: Update, context: ContextTypes.DEFAULT_TYPE)
     
     if current_mode == "all":
         GLOBAL_CHAT_REACT_MODE[chat_id] = None
-        await context.bot.send_message(chat_id=chat_id, text="❌ Auto-Reaction for ALL users Disabled.")
+        await send_auto_delete_msg(context, chat_id, "❌ Auto-Reaction for ALL users Disabled.", delay=120)
     else:
         GLOBAL_CHAT_REACT_MODE[chat_id] = "all"
-        await context.bot.send_message(chat_id=chat_id, text="✅ Auto-Reaction Enabled for ALL users!")
+        await send_auto_delete_msg(context, chat_id, "✅ Auto-Reaction Enabled for ALL users!", delay=120)
 
 async def cmd_togglereact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -1093,20 +1154,20 @@ async def cmd_togglereact(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if current_mode == "admin":
         GLOBAL_CHAT_REACT_MODE[chat_id] = None
-        await context.bot.send_message(chat_id=chat_id, text="❌ Admin Auto-Reaction Disabled.")
+        await send_auto_delete_msg(context, chat_id, "❌ Admin Auto-Reaction Disabled.", delay=120)
     else:
         GLOBAL_CHAT_REACT_MODE[chat_id] = "admin"
-        await context.bot.send_message(chat_id=chat_id, text="✅ Auto-Reaction Enabled for OWNER & ADMINS only!")
+        await send_auto_delete_msg(context, chat_id, "✅ Auto-Reaction Enabled for OWNER & ADMINS only!", delay=120)
 
 async def cmd_stopall(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     await hard_stop_all(update.effective_chat.id, context, update.effective_user.id)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="🚨 ALL THREADS, TRAPS & ACTIVE TASKS KILLED SUCCESSFULLY!")
+    await send_auto_delete_msg(context, update.effective_chat.id, "🚨 ALL THREADS, TRAPS & ACTIVE TASKS KILLED SUCCESSFULLY!", delay=120)
 
 async def cmd_scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     members = await chat.get_member_count()
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"📊 CHAT MATRIX SCAN:\n• Title: {chat.title}\n• ID: {chat.id}\n• Members: {members}")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"📊 CHAT MATRIX SCAN:\n• Title: {chat.title}\n• ID: {chat.id}\n• Members: {members}", delay=120)
 
 async def cmd_ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     start = time.time()
@@ -1114,26 +1175,26 @@ async def cmd_ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
         try:
             latency = round((time.time() - start) * 1000, 2)
             indicator = "🟢" if latency < 700.0 else "🔴"
-            await bot.send_message(
-                chat_id=update.effective_chat.id, 
-                text=f"📡 Latency Telemetry:\nPING: {latency}ms {indicator}"
+            await send_auto_delete_msg(
+                context, update.effective_chat.id, 
+                f"📡 Latency Telemetry:\nPING: {latency}ms {indicator}", 
+                delay=120
             )
-        except Exception: 
-            pass
+        except Exception: pass
 
 async def cmd_getid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target = update.message.reply_to_message.from_user if update.message.reply_to_message else update.effective_user
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🆔 User ID: {target.id}\n💬 Chat ID: {update.effective_chat.id}")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"🆔 User ID: {target.id}\n💬 Chat ID: {update.effective_chat.id}", delay=120)
 
 async def cmd_status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tasks = len(get_chat_data(update.effective_chat.id)["tasks"])
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚙️ CLUSTER STATE: Active ({len(BOT_INSTANCES)} Bots Connected)\n🔥 Active Tasks: {tasks}")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"⚙️ CLUSTER STATE: Active ({len(BOT_INSTANCES)} Bots Connected)\n🔥 Active Tasks: {tasks}", delay=120)
 
 async def cmd_omg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     reply = update.message.reply_to_message
     if not reply or not (reply.photo or reply.video or reply.document or reply.voice):
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Please reply to a media message with +omg.")
+        return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Please reply to a media message with +omg.", delay=120)
 
     status_msg = await context.bot.send_message(chat_id=update.effective_chat.id, text="⚡ Extracting media...")
     try:
@@ -1151,6 +1212,8 @@ async def cmd_omg(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_document(chat_id=update.effective_user.id, document=bytes(file_bytes))
             
         await status_msg.edit_text("✅ Saved to your PM!")
+        await asyncio.sleep(5)
+        await status_msg.delete()
     except Exception as e:
         await status_msg.edit_text(f"❌ Extraction Error: {str(e)}")
 
@@ -1158,9 +1221,9 @@ async def cmd_omg(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def cmd_tts_lang(update: Update, context: ContextTypes.DEFAULT_TYPE, lang: str):
     text = " ".join(update.message.text.split()[1:])
     if not text: 
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Error: Please provide text for the voice note!")
+        return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Error: Please provide text for the voice note!", delay=120)
     if gTTS is None:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🔊 [No gTTS] Please ensure 'gtts' is pip installed.\nText: {text}")
+        return await send_auto_delete_msg(context, update.effective_chat.id, f"🔊 [No gTTS] Please ensure 'gtts' is pip installed.\nText: {text}", delay=120)
     
     try:
         tts = gTTS(text=text, lang=lang)
@@ -1172,7 +1235,7 @@ async def cmd_tts_lang(update: Update, context: ContextTypes.DEFAULT_TYPE, lang:
             
         os.remove(filename)
     except Exception as e:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Voice Error: {str(e)}")
+        await send_auto_delete_msg(context, update.effective_chat.id, f"❌ Voice Error: {str(e)}", delay=120)
 
 async def cmd_tts(update, context): await cmd_tts_lang(update, context, "hi")
 async def cmd_ttshi(update, context): await cmd_tts_lang(update, context, "hi")
@@ -1208,7 +1271,7 @@ async def cmd_leave(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
     args = update.message.text.split()[1:]
     if not args:
-        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +leave <@bot_username>")
+        return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +leave <@bot_username>", delay=120)
     
     target_bot_username = args[0].lower().replace("@", "")
     
@@ -1219,17 +1282,17 @@ async def cmd_leave(update: Update, context: ContextTypes.DEFAULT_TYPE):
             found = True
             try:
                 await bot.leave_chat(chat_id=update.effective_chat.id)
-                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"👋 Bot @{me.username} left the chat.")
+                await send_auto_delete_msg(context, update.effective_chat.id, f"👋 Bot @{me.username} left the chat.", delay=120)
             except Exception as e:
-                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to leave: {e}")
+                await send_auto_delete_msg(context, update.effective_chat.id, f"❌ Failed to leave: {e}", delay=120)
             break
             
     if not found:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"⚠️ Bot @{target_bot_username} not found in cluster.")
+        await send_auto_delete_msg(context, update.effective_chat.id, f"⚠️ Bot @{target_bot_username} not found in cluster.", delay=120)
 
 async def cmd_leavekrishslayin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="👋 Initiating Mass Leave across all cluster bots...")
+    await send_auto_delete_msg(context, update.effective_chat.id, "👋 Initiating Mass Leave across all cluster bots...", delay=120)
     
     for bot in BOT_INSTANCES:
         try:
@@ -1273,13 +1336,13 @@ async def cmd_cluster(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     )
 
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=cluster_text)
+    await send_auto_delete_msg(context, update.effective_chat.id, cluster_text, delay=120)
 
 async def cmd_broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
     text = " ".join(update.message.text.split()[1:])
-    if not text: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +broadcast <text>")
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"📢 GLOBAL BROADCAST SENT:\n{text}")
+    if not text: return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +broadcast <text>", delay=120)
+    await send_auto_delete_msg(context, update.effective_chat.id, f"📢 GLOBAL BROADCAST SENT:\n{text}", delay=120)
 
 async def cmd_slayinpowergifted(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
@@ -1287,7 +1350,7 @@ async def cmd_slayinpowergifted(update: Update, context: ContextTypes.DEFAULT_TY
     target_id = int(args[0]) if args and args[0].isdigit() else (update.message.reply_to_message.from_user.id if update.message.reply_to_message else None)
     if target_id:
         AUTHORIZED_ADMINS.add(target_id)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"👑 Admin rights granted to {target_id}.")
+        await send_auto_delete_msg(context, update.effective_chat.id, f"👑 Admin rights granted to {target_id}.", delay=120)
 
 async def cmd_slayinpowertaken(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
@@ -1295,20 +1358,20 @@ async def cmd_slayinpowertaken(update: Update, context: ContextTypes.DEFAULT_TYP
     target_id = int(args[0]) if args and args[0].isdigit() else (update.message.reply_to_message.from_user.id if update.message.reply_to_message else None)
     if target_id and target_id != OWNER_ID:
         AUTHORIZED_ADMINS.discard(target_id)
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🗑️ Admin rights revoked from {target_id}.")
+        await send_auto_delete_msg(context, update.effective_chat.id, f"🗑️ Admin rights revoked from {target_id}.", delay=120)
 
 async def cmd_slayinfor(update: Update, context: ContextTypes.DEFAULT_TYPE):
     admin_list = "\n".join([f"• {uid}" for uid in AUTHORIZED_ADMINS])
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"👑 AUTHORIZED ADMINS:\n{admin_list}")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"👑 AUTHORIZED ADMINS:\n{admin_list}", delay=120)
 
 async def cmd_gban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID: return
     reply = update.message.reply_to_message
     args = update.message.text.split()[1:]
     target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
-    if not target_id: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target user or pass ID.")
+    if not target_id: return await send_auto_delete_msg(context, update.effective_chat.id, "Reply to target user or pass ID.", delay=120)
     GBANNED_USERS.add(target_id)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🚫 Target {target_id} globally blacklisted.")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"🚫 Target {target_id} globally blacklisted.", delay=120)
     await send_log(context, f"🚫 *GLOBAL BAN APPLIED*\nTarget: `{target_id}`\nAdmin: `{update.effective_user.id}`")
 
 async def cmd_ungban(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1316,9 +1379,9 @@ async def cmd_ungban(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply = update.message.reply_to_message
     args = update.message.text.split()[1:]
     target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
-    if not target_id: return await context.bot.send_message(chat_id=update.effective_chat.id, text="Reply to target user or pass ID.")
+    if not target_id: return await send_auto_delete_msg(context, update.effective_chat.id, "Reply to target user or pass ID.", delay=120)
     GBANNED_USERS.discard(target_id)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=f"✅ Target {target_id} removed from blacklist.")
+    await send_auto_delete_msg(context, update.effective_chat.id, f"✅ Target {target_id} removed from blacklist.", delay=120)
     await send_log(context, f"✅ *GLOBAL UNBAN APPLIED*\nTarget: `{target_id}`\nAdmin: `{update.effective_user.id}`")
 
 async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1476,7 +1539,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "target": cmd_target, "vtarget": cmd_vtarget, "stoptarget": cmd_stoptarget,
             "catch": cmd_catch, "stopcatch": cmd_stopcatch,
             "lock": cmd_lock, "unlock": cmd_unlock,
-            "promote0": cmd_promote0, "promote1": cmd_promote1, "demote": cmd_demote,
+            "promote1": cmd_promote1, "promote2": cmd_promote2, "demote": cmd_demote,
             "kick": cmd_kick, "adminlist": cmd_adminlist,
             "spam": cmd_spam, "stopspam": cmd_stopspam,
             "flood": cmd_flood, "vflood": cmd_vflood, "stopflood": cmd_stopflood,
