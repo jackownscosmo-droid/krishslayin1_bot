@@ -11,14 +11,14 @@ if sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
 
 try:
-    from gtts import gTTS
+    from gTTS import gTTS
 except ImportError:
     gTTS = None
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ChatPermissions
 from telegram.ext import (
     ApplicationBuilder, MessageHandler, 
-    CallbackQueryHandler, filters, ContextTypes
+    CallbackQueryHandler, ChatMemberHandler, filters, ContextTypes
 )
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -71,7 +71,7 @@ TARGET_15_LINES = [
     "randy pane me to teri ma aval darje ki hakdaar he😁👍😁👍😁👍😁👍",
     "𝘿𝙃𝘼𝙏 ʳⁿᵈⁱᵏᵉʸ 🤦🏿‍♂️💢𝘿𝙃𝘼𝙏 ʳⁿᵈⁱᵏᵉʸ 🤦🏿‍♂️💢",
     "ᗷᑌᖇ ᗪᗴᗪO Tᑌᕼᗩᖇ ᗰᗩIYᗩ Kᗴ 😂💔🤤🫦👅🤡",
-    "𝐓ᴇʀɪ 𝐌ᴀᴀ 𝐂ʜᴜᴅᴋᴇ 𝐁ʜᴀᴀɢ 𝐑ᴀʜɪ -> 🏃🏻‍♀️🔥🤸🏻‍♀️🔥🏃🏻‍♀️🔥🤸🏻‍♀️🔥"
+    "𝐓ᴇʀɪ 𝐌ᴀᴀ 𝐂ʜᴜᴅᴋᴇ 𝐁ʜᴀᴀɢ 𝐑ᴀʜɪ -> 🏃🏻‍♀️🔥🏃🏻‍♀️🔥"
 ]
 
 AUTOREPLY_LINES = [
@@ -118,7 +118,7 @@ VALID_COMMANDS = {
     "roasthi", "roasteng", "cluster", "broadcast",
     "slayinpowergifted", "slayinpowertaken", "slayinfor",
     "gban", "ungban", "ht", "leave", "leavekrishslayin", "catch", "stopcatch",
-    "lock", "unlock"
+    "lock", "unlock", "promote0", "promote1", "demote", "kick", "adminlist"
 }
 
 MAIN_BOT_ONLY_COMMANDS = VALID_COMMANDS
@@ -134,12 +134,34 @@ def get_chat_data(chat_id):
             "reptts": set(),
             "vtarget_trap": {},
             "catch_trap": {},
-            "media_locked": False
+            "media_locked": False,
+            "admin_levels": {},  # {user_id: 0 or 1}
+            "kick_tracker": {}   # {user_id: [timestamps]}
         }
     return CHAT_TASKS[chat_id]
 
 def is_admin(user_id):
     return user_id in AUTHORIZED_ADMINS or user_id == OWNER_ID
+
+async def is_level1_or_manual_admin(chat_id: int, user_id: int, context: ContextTypes.DEFAULT_TYPE) -> bool:
+    if user_id == OWNER_ID:
+        return True
+    chat_data = get_chat_data(chat_id)
+    level = chat_data["admin_levels"].get(user_id)
+    if level == 1:
+        return True
+    if level == 0:
+        return False
+    # Check if manually assigned admin in Telegram
+    try:
+        member = await context.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+        if member.status == "creator" or (member.status == "administrator" and member.can_promote_members):
+            return True
+        if member.status == "administrator" and user_id not in chat_data["admin_levels"]:
+            return True
+    except Exception:
+        pass
+    return False
 
 async def get_active_bots_in_chat(chat_id):
     active_bots = []
@@ -239,6 +261,11 @@ def get_menu_text(page: int):
             "────────────────────────────\n"
             "• +lock — Auto-delete all photos/videos instantly (Everyone)\n"
             "• +unlock — Unlock media sending in chat\n"
+            "• +promote0 — Level 2 Admin 🥈\n"
+            "• +promote1 — Level 1 Admin 🥇\n"
+            "• +demote — Strip admin rights\n"
+            "• +kick — Kick member\n"
+            "• +adminlist — List active group admins\n"
             "• +panel — Interactive inline dashboard\n"
             "• +ht — Honeytrap (Shadow-mute with fake unmute button)\n"
             "• +mute [user] — Shadow-mute target\n"
@@ -252,7 +279,7 @@ def get_menu_text(page: int):
             "• +stopautoreply — Disarm auto-reply\n"
             "• +reptts [user] — Voice trap\n"
             "• +stopreptts — Disarm voice trap\n"
-            "• +clean [count] — Purge recent messages (All Users/Admins/Bots)\n"
+            "• +clean [count] — Purge recent messages\n"
             "• +togglereactall — Toggle reactions for ALL users\n"
             "• +togglereact — Toggle reactions for ADMINS ONLY\n"
             "• +stopall — Emergency Kill Switch"
@@ -316,6 +343,220 @@ async def menu_callback_handler(update: Update, context: ContextTypes.DEFAULT_TY
     elif data.startswith("menu_"):
         page = int(data.split("_")[1])
         await query.edit_message_text(get_menu_text(page), reply_markup=get_menu_keyboard(page))
+
+# --- Anti-Mass Kick Tracker (Anti-Nuke) ---
+async def track_member_removals(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not update.chat_member:
+        return
+    
+    chat_member = update.chat_member
+    old_status = chat_member.old_chat_member.status
+    new_status = chat_member.new_chat_member.status
+    actor = chat_member.from_user
+    target = chat_member.new_chat_member.user
+    chat_id = update.effective_chat.id
+
+    # Detect if user was kicked/removed by someone else
+    if old_status in ['member', 'administrator', 'restricted'] and new_status in ['kicked', 'left']:
+        if actor.id == target.id:
+            return  # User left voluntarily
+        
+        chat_data = get_chat_data(chat_id)
+        now = time.time()
+        
+        if actor.id not in chat_data["kick_tracker"]:
+            chat_data["kick_tracker"][actor.id] = []
+            
+        # Add current removal timestamp & clean older than 60s
+        chat_data["kick_tracker"][actor.id].append(now)
+        chat_data["kick_tracker"][actor.id] = [t for t in chat_data["kick_tracker"][actor.id] if now - t <= 60]
+        
+        removal_count = len(chat_data["kick_tracker"][actor.id])
+        
+        # Anti-Nuke Trigger (If > 4 removals in 60 seconds)
+        if removal_count >= 5:
+            try:
+                # 1. Demote admin rights
+                await context.bot.promote_chat_member(
+                    chat_id=chat_id,
+                    user_id=actor.id,
+                    can_change_info=False,
+                    can_post_messages=False,
+                    can_edit_messages=False,
+                    can_delete_messages=False,
+                    can_invite_users=False,
+                    can_restrict_members=False,
+                    can_pin_messages=False,
+                    can_promote_members=False,
+                    can_manage_video_chats=False
+                )
+            except Exception:
+                pass
+            
+            try:
+                # 2. Ban perpetrator from group
+                await context.bot.ban_chat_member(chat_id=chat_id, user_id=actor.id)
+            except Exception:
+                pass
+
+            chat_data["admin_levels"].pop(actor.id, None)
+            AUTHORIZED_ADMINS.discard(actor.id)
+            chat_data["kick_tracker"][actor.id] = []
+
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=f"🚨 **ANTI-NUKE TRIGGERED!**\nAdmin [{actor.first_name}](tg://user?id={actor.id}) removed {removal_count} members in <60s.\n\n⚡ Action: Rights Stripped & Removed/Banned from Group!",
+                parse_mode="Markdown"
+            )
+            await send_log(context, f"🚨 *ANTI-NUKE EXECUTED*\nChat: `{chat_id}`\nPerpetrator: `{actor.id}`\nRemovals: `{removal_count}`")
+
+# --- Management & Level Promotion Commands ---
+
+async def cmd_promote0(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Only Level 1 Admins or Main Admins can use +promote0!")
+
+    reply = update.message.reply_to_message
+    args = update.message.text.split()[1:]
+    target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
+
+    if not target_id:
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +promote0 (Reply to user or pass ID)")
+
+    try:
+        await context.bot.promote_chat_member(
+            chat_id=update.effective_chat.id,
+            user_id=target_id,
+            can_delete_messages=True,
+            can_invite_users=True,
+            can_pin_messages=True,
+            can_manage_video_chats=True,
+            can_promote_members=False
+        )
+        try:
+            await context.bot.set_chat_administrator_custom_title(
+                chat_id=update.effective_chat.id,
+                user_id=target_id,
+                custom_title="Level 2 Admin 🥈"
+            )
+        except Exception:
+            pass
+
+        get_chat_data(update.effective_chat.id)["admin_levels"][target_id] = 0
+        AUTHORIZED_ADMINS.add(target_id)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🥈 User {target_id} promoted to Level 2 Admin (Delete, Invite, Pin, Live Stream Rights)!")
+    except Exception as e:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to promote: {str(e)}")
+
+async def cmd_promote1(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Only Level 1 Admins or Main Admins can use +promote1!")
+
+    reply = update.message.reply_to_message
+    args = update.message.text.split()[1:]
+    target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
+
+    if not target_id:
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +promote1 (Reply to user or pass ID)")
+
+    try:
+        await context.bot.promote_chat_member(
+            chat_id=update.effective_chat.id,
+            user_id=target_id,
+            can_delete_messages=True,
+            can_invite_users=True,
+            can_pin_messages=True,
+            can_manage_video_chats=True,
+            can_promote_members=True
+        )
+        try:
+            await context.bot.set_chat_administrator_custom_title(
+                chat_id=update.effective_chat.id,
+                user_id=target_id,
+                custom_title="Level 1 Admin 🥇"
+            )
+        except Exception:
+            pass
+
+        get_chat_data(update.effective_chat.id)["admin_levels"][target_id] = 1
+        AUTHORIZED_ADMINS.add(target_id)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🥇 User {target_id} promoted to Level 1 Admin (Full Rights + Add New Admins)!")
+    except Exception as e:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to promote: {str(e)}")
+
+async def cmd_demote(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Permission Denied!")
+
+    reply = update.message.reply_to_message
+    args = update.message.text.split()[1:]
+    target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
+
+    if not target_id:
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +demote (Reply to user or pass ID)")
+
+    try:
+        await context.bot.promote_chat_member(
+            chat_id=update.effective_chat.id,
+            user_id=target_id,
+            can_change_info=False, can_post_messages=False, can_edit_messages=False,
+            can_delete_messages=False, can_invite_users=False, can_restrict_members=False,
+            can_pin_messages=False, can_promote_members=False, can_manage_video_chats=False
+        )
+        get_chat_data(update.effective_chat.id)["admin_levels"].pop(target_id, None)
+        if target_id != OWNER_ID:
+            AUTHORIZED_ADMINS.discard(target_id)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"📉 Admin rights stripped from {target_id}.")
+    except Exception as e:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to demote: {str(e)}")
+
+async def cmd_kick(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    reply = update.message.reply_to_message
+    args = update.message.text.split()[1:]
+    target_id = reply.from_user.id if reply else (int(args[0]) if args and args[0].isdigit() else None)
+
+    if not target_id:
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="Usage: +kick (Reply to user or pass ID)")
+
+    chat_data = get_chat_data(update.effective_chat.id)
+    executor_level = chat_data["admin_levels"].get(update.effective_user.id)
+    target_level = chat_data["admin_levels"].get(target_id)
+
+    # Hierarchy restriction
+    if executor_level == 0 and target_level is not None:
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="🚫 Level 2 Admins 🥈 cannot kick other admins!")
+
+    try:
+        await context.bot.ban_chat_member(chat_id=update.effective_chat.id, user_id=target_id)
+        await context.bot.unban_chat_member(chat_id=update.effective_chat.id, user_id=target_id)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"👢 User {target_id} has been kicked from the chat.")
+    except Exception as e:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to kick: {str(e)}")
+
+async def cmd_adminlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        admins = await context.bot.get_chat_administrators(chat_id=update.effective_chat.id)
+        chat_data = get_chat_data(update.effective_chat.id)
+        lines = []
+        for a in admins:
+            user = a.user
+            custom_title = a.custom_title or "Admin"
+            level_tag = ""
+            if user.id in chat_data["admin_levels"]:
+                lvl = chat_data["admin_levels"][user.id]
+                level_tag = "🥇 Level 1" if lvl == 1 else "🥈 Level 2"
+            elif a.status == "creator":
+                level_tag = "👑 Owner / Creator"
+            else:
+                level_tag = "🛠️ Manual Admin"
+
+            lines.append(f"• {user.first_name} (`{user.id}`) | {custom_title} [{level_tag}]")
+
+        text = "👑 **GROUP ADMINISTRATORS LIST**:\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" + "\n".join(lines)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=text, parse_mode="Markdown")
+    except Exception as e:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=f"❌ Failed to fetch admins: {str(e)}")
 
 # --- Combat Commands ---
 
@@ -555,9 +796,10 @@ async def cmd_stopcatch(update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_data["catch_trap"].clear()
     await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Catch trap disarmed.")
 
-# --- DARK LOCK COMMAND (Media Lock) ---
+# --- DARK LOCK COMMAND (Media Lock Restricted to Level 1 / Manual Admins) ---
 async def cmd_lock(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update.effective_user.id): return
+    if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Only Level 1 Admins or Main Admins can use +lock!")
     chat_data = get_chat_data(update.effective_chat.id)
     chat_data["media_locked"] = True
     await context.bot.send_message(
@@ -566,7 +808,8 @@ async def cmd_lock(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 async def cmd_unlock(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update.effective_user.id): return
+    if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
+        return await context.bot.send_message(chat_id=update.effective_chat.id, text="⚠️ Only Level 1 Admins or Main Admins can use +unlock!")
     chat_data = get_chat_data(update.effective_chat.id)
     chat_data["media_locked"] = False
     await context.bot.send_message(chat_id=update.effective_chat.id, text="🔓 MEDIA LOCK DEACTIVATED!")
@@ -800,7 +1043,6 @@ async def cmd_stopreptts(update: Update, context: ContextTypes.DEFAULT_TYPE):
     get_chat_data(update.effective_chat.id)["reptts"].clear()
     await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Voice trap disarmed.")
 
-# --- FIXED CLEAN COMMAND (Forces Bot instances to delete their own messages if needed) ---
 async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
@@ -813,18 +1055,16 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
     status = await context.bot.send_message(chat_id=update.effective_chat.id, text=f"🧹 Purging {count} messages... (Superfast All-User Mode)")
 
     deleted = 0
-    # Process deletions by testing each bot instance to bypass personal deletion limits
     for i in range(count + 1):
         target_message_id = msg_id - i
         for bot in BOT_INSTANCES:
             try:
                 await bot.delete_message(chat_id=update.effective_chat.id, message_id=target_message_id)
                 deleted += 1
-                break  # Once deleted successfully by one bot, move to next message
+                break
             except Exception:
                 pass
         
-        # Prevent Flood Wait by pausing slightly every 20 messages
         if i % 20 == 0:
             await asyncio.sleep(0.1)
 
@@ -868,7 +1108,6 @@ async def cmd_scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     members = await chat.get_member_count()
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"📊 CHAT MATRIX SCAN:\n• Title: {chat.title}\n• ID: {chat.id}\n• Members: {members}")
 
-# --- FIXED PING LOGIC (Green for <700ms, Red for >=700ms, No Bot Username) ---
 async def cmd_ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     start = time.time()
     for bot in BOT_INSTANCES:
@@ -1100,6 +1339,9 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
         if possible_cmd in VALID_COMMANDS:
             cmd_name = possible_cmd
             is_valid_cmd = True
+        elif possible_cmd == "admin" and len(text.split()) > 1 and text.split()[1].lower() == "list":
+            cmd_name = "adminlist"
+            is_valid_cmd = True
 
     if is_valid_cmd:
         try: await update.message.delete()
@@ -1126,7 +1368,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
         try: return await update.message.delete()
         except Exception: pass
 
-    # --- CATCH TRAP EXECUTION (Fixed: Only main bot triggers this, selects 1 random bot to reply) ---
+    # --- CATCH TRAP EXECUTION ---
     catch_trap = chat_data.get("catch_trap", {})
     if catch_trap and is_main_bot:
         matched_key = None
@@ -1138,7 +1380,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
         if matched_key:
             line_count = catch_trap[matched_key]
             active_bots = await get_active_bots_in_chat(chat_id)
-            selected_bot = random.choice(active_bots) # Only ONE random bot is selected
+            selected_bot = random.choice(active_bots)
 
             async def fire_catch_replies(bot_to_use, target_msg_id, num_lines):
                 display_name = f"@{username}" if username else update.message.from_user.first_name
@@ -1234,6 +1476,8 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "target": cmd_target, "vtarget": cmd_vtarget, "stoptarget": cmd_stoptarget,
             "catch": cmd_catch, "stopcatch": cmd_stopcatch,
             "lock": cmd_lock, "unlock": cmd_unlock,
+            "promote0": cmd_promote0, "promote1": cmd_promote1, "demote": cmd_demote,
+            "kick": cmd_kick, "adminlist": cmd_adminlist,
             "spam": cmd_spam, "stopspam": cmd_stopspam,
             "flood": cmd_flood, "vflood": cmd_vflood, "stopflood": cmd_stopflood,
             "gcpfp": cmd_gcpfp, "stopgcpfp": cmd_stopgcpfp,
@@ -1260,6 +1504,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
 async def start_single_bot(token: str, bot_index: int):
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CallbackQueryHandler(menu_callback_handler))
+    app.add_handler(ChatMemberHandler(track_member_removals, ChatMemberHandler.CHAT_MEMBER))
     app.add_handler(MessageHandler(filters.ALL, global_message_router))
 
     await app.initialize()
