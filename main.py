@@ -39,7 +39,23 @@ BOT_INSTANCES = []
 GLOBAL_CHAT_REACT_MODE = {}
 REACTION_EMOJI = "🤣"
 
-# --- NEW: 15 Lines Target Array ---
+# --- NEW: Catch Lines Array ---
+CATCH_LINES = [
+    "{name} 𝘽𝙃𝘼𝙂𝘼 𝘽𝙃𝘼𝙂𝘼 𝙆𝙀 𝙈𝘼𝙍𝙐𝙉𝙂𝘼 🤣🩷🙌🏾",
+    "{name} 𝙃𝙊𝙎𝙃 𝙈𝙀 𝘼𝘼 𝙍𝙉𝘿𝙄𝙆𝙀",
+    "𝐀𝐫𝐞𝐞𝐞𝐞 𝐓𝐞𝐫𝐢 𝐦𝐚𝐚𝐚 𝐫𝐧𝐝𝐢 😂😂😂😂👉🏻☝🏻🤸🏻🧑🏻‍🦯🏃🏻🧑🏻‍🦯⛹🏻🧑🏻‍🦯🧘🏻🧑🏻‍🦯🛌🏻🧘🏻 {name}",
+    "🖋️ ये ले pen इससे अपने सर पे रंडीका बच्चा लिख दे {name}",
+    "𝙥𝙖𝙥𝙖 𝙗𝙤𝙡 𝙘𝙝𝙤𝙧 𝙙𝙪𝙣𝙜𝙖𝙖𝙖𝙖 𝙧𝙣𝙙𝙮 𝙠𝙚 𝙗𝙘𝙝𝙚 {name}",
+    "{name} Tera maiya chod ke bhaiya nikaal dnege maderchodⓘ यह संदेश हटा दिया गया था क्योंकि तेरी माँ रेंडी",
+    "Çhµþ †êrï må kå ßhð§Ðå {name}",
+    "𝙘𝙝𝙪𝙥 𝙜𝙧𝙞𝙗 𝙠𝙞𝙣𝙣𝙚𝙧 𝙧𝙣𝙙𝙮😆😆🔥 {name}",
+    "{name} तेरी मां की चूतड़ फाड़ दूंगा 𝐁ʜड़वे 𝐂ᴜᴅ अब 😁💪🏿🔥😁💪🏿🔥😁💪🏿🔥😁💪🏿🔥",
+    "𝐓ᴏᴍᴍʏ 𝐒ʜᴜ 𝐒ʜᴜ 🐕🔥🐕🔥 {name}",
+    "𝐁𝐀𝐇𝐀𝐑 𝐀𝐀 𝐑𝐔𝐍𝐃𝐘𝐊𝐄 𝐋𝐀𝐃𝐊𝐄 🐦‍🔥⛓️‍💥 {name}",
+    "{name} तेरी मां को इतना chodunga की स्टोरी लगाके जस्टिस मांगेगा"
+]
+
+# --- 15 Lines Target Array ---
 TARGET_15_LINES = [
     "Clap करो रंडीबाले ne joke mara h 😂👋🏻😂👋🏻😂👋🏻😂👋🏻😂👋🏻😂👋🏻",
     "चलेगी toh teri लंगड़ी maa 😁🔥😂👋🏻😂😂🔥🔥",
@@ -47,7 +63,7 @@ TARGET_15_LINES = [
     "Oye message mat kar warna ᴛᴇʀɪ ᴍᴀᴀ ᴄʜᴏᴅ dunga🤣🤣",
     "अच्छा teri maa के बूब्स पे green veins h इसलिए tu itna खिलसता h 😂👏🏻",
     "𝐄ɴᴛʀʏ 𝐋ᴇʟɪ 𝐓ᴏ 𝐀sᴍᴀɴ 𝐊ɪ 𝐔ᴄʜᴀɪᴏ 𝐏ᴇ 𝐓ᴇʀɪ 𝐌ᴀ 𝐂ʜᴜᴅᴇɢɪ / 🌘🕊️",
-    "Teri Maa Ko Football ⚽ bnake uske 𝗕𝗛😈𝗦𝗗𝗘 pe laat 🦶🏻 marunga 🤩🔥",
+    "Teri Maa Ko Football ⚽ bnake uske 𝗕𝗛😈𝗦แด pe laat 🦶🏻 marunga 🤩🔥",
     "Tri maa ke bosde pr jcb se khudai krwa duga rndyke😂😂🤟💥💥🤟",
     "Le धमाकेदार mukka kha रन्डी ke चाइल्ड 👊🏻👊🏻👊🏻🤣🤣",
     "चाल चल teri chudai डॉन hogyi !! Ab teri लंगड़ी maa दौड़ेगी 😂👋🏻",
@@ -101,10 +117,9 @@ VALID_COMMANDS = {
     "ttshi", "ttsen", "ttsjap", "ttsgerman", 
     "roasthi", "roasteng", "cluster", "broadcast",
     "slayinpowergifted", "slayinpowertaken", "slayinfor",
-    "gban", "ungban", "ht", "leave", "leavekrishslayin"
+    "gban", "ungban", "ht", "leave", "leavekrishslayin", "catch", "stopcatch"
 }
 
-# HACK FIX: Saari commands ab bas main bot process karega taaki zombie tasks na banein aur command collisions (0 delete wali problem) theek ho jaye.
 MAIN_BOT_ONLY_COMMANDS = VALID_COMMANDS
 
 def get_chat_data(chat_id):
@@ -189,6 +204,8 @@ def get_menu_text(page: int):
             "• +target [user] — Mention loop\n"
             "• +vtarget [@user] [@bots...] — Advanced 15-reply target trap\n"
             "• +stoptarget — Disarm targeting loops\n"
+            "• +catch [user] [count] — Random bot swipe attack\n"
+            "• +stopcatch — Disarm catch trap\n"
             "• +spam [text] — Multi-bot high-speed spam\n"
             "• +stopspam — EMERGENCY KILL-SWITCH (STOPS EVERYTHING)\n"
             "• +flood [user] — Mention flood\n"
@@ -226,7 +243,7 @@ def get_menu_text(page: int):
             "🛠️ BLACKOUT & TOOLS\n"
             "────────────────────────────\n"
             "• +scan — Group scanner\n"
-            "• +ping — Matrix latency test\n"
+            "• +ping — Matrix latency test for all bots\n"
             "• +getid — Fetch numeric ID\n"
             "• +status — Cluster state\n"
             "• +omg — Extract view-once media to PM\n"
@@ -311,7 +328,6 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 title_idx += 1
             except Exception: pass
             bot_idx += 1
-            # Allows 0.0s delay safely without locking event loop
             await asyncio.sleep(speed if speed > 0 else 0.05)
 
     task = asyncio.create_task(multi_gcnc_loop())
@@ -479,6 +495,67 @@ async def cmd_stoptarget(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     if stopped:
         await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 All Targeting and 15-Swipe Traps disarmed.")
+
+# --- NEW: Catch Commands ---
+async def cmd_catch(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id): return
+    args = update.message.text.split()[1:]
+    reply = update.message.reply_to_message
+    
+    target_name = None
+    count = 10  # Default count
+
+    if reply and reply.from_user:
+        target_name = f"@{reply.from_user.username}" if reply.from_user.username else reply.from_user.first_name
+
+    for arg in args:
+        if arg.isdigit():
+            count = int(arg)
+        else:
+            target_name = arg
+
+    if not target_name:
+        return await context.bot.send_message(
+            chat_id=update.effective_chat.id, 
+            text="⚠️ Target ya number specify karo! (Reply ya +catch @user 100)"
+        )
+
+    chat_data = get_chat_data(update.effective_chat.id)
+    if "catch" in chat_data["tasks"]: 
+        chat_data["tasks"]["catch"].cancel()
+
+    async def catch_loop():
+        random_bot = random.choice(BOT_INSTANCES)
+        me = await random_bot.get_me()
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id, 
+            text=f"🎯 Target Locked on {target_name}. Random bot @{me.username} will fire {count} replies!"
+        )
+
+        for _ in range(count):
+            line = random.choice(CATCH_LINES).format(name=target_name)
+            try:
+                if reply:
+                    await random_bot.send_message(
+                        chat_id=update.effective_chat.id, 
+                        text=line, 
+                        reply_to_message_id=reply.message_id
+                    )
+                else:
+                    await random_bot.send_message(chat_id=update.effective_chat.id, text=line)
+                await asyncio.sleep(0.3)
+            except Exception:
+                pass
+
+    task = asyncio.create_task(catch_loop())
+    chat_data["tasks"]["catch"] = task
+
+async def cmd_stopcatch(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_data = get_chat_data(update.effective_chat.id)
+    if "catch" in chat_data["tasks"]:
+        chat_data["tasks"]["catch"].cancel()
+        del chat_data["tasks"]["catch"]
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="🛑 Catch loop disarmed.")
 
 async def cmd_flood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -736,7 +813,7 @@ async def cmd_clean(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if len(tasks) >= 50:
             await asyncio.gather(*tasks)
             tasks = []
-            await asyncio.sleep(0.5) # Thoda delay banaya h API crash bachane k liye
+            await asyncio.sleep(0.5)
             
     if tasks:
         await asyncio.gather(*tasks)
@@ -781,12 +858,20 @@ async def cmd_scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     members = await chat.get_member_count()
     await context.bot.send_message(chat_id=update.effective_chat.id, text=f"📊 CHAT MATRIX SCAN:\n• Title: {chat.title}\n• ID: {chat.id}\n• Members: {members}")
 
+# --- UPDATED: Multi-Bot Ping Command ---
 async def cmd_ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     start = time.time()
-    msg = await context.bot.send_message(chat_id=update.effective_chat.id, text="📡 Pinging cluster...")
-    latency = round((time.time() - start) * 1000, 2)
-    indicator = "🟢" if latency <= 1000.0 else "🔴"
-    await msg.edit_text(f"📶 LATENCY TELEMETRY: {latency}ms {indicator}")
+    for bot in BOT_INSTANCES:
+        try:
+            me = await bot.get_me()
+            latency = round((time.time() - start) * 1000, 2)
+            indicator = "🟢" if latency <= 1000.0 else "🔴"
+            await bot.send_message(
+                chat_id=update.effective_chat.id, 
+                text=f"📡 @{me.username} PING: {latency}ms {indicator}"
+            )
+        except Exception: 
+            pass
 
 async def cmd_getid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target = update.message.reply_to_message.from_user if update.message.reply_to_message else update.effective_user
@@ -821,7 +906,7 @@ async def cmd_omg(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await status_msg.edit_text(f"❌ Extraction Error: {str(e)}")
 
-# --- Fixed Voice Note Commands ---
+# --- Voice Note Commands ---
 async def cmd_tts_lang(update: Update, context: ContextTypes.DEFAULT_TYPE, lang: str):
     text = " ".join(update.message.text.split()[1:])
     if not text: 
@@ -1073,7 +1158,6 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             os.remove(fname)
         except Exception: pass
 
-    # Reactions wala system pehle jaisa chalega but toggle commands siraf ek bot padhega
     react_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
     if react_mode is not None and not is_valid_cmd:
         should_react = False
@@ -1092,7 +1176,6 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
                 )
             except Exception: pass
 
-    # COMMAND ROUTING HACK: Ab bas MAIN bot process karega saari loops
     if is_valid_cmd:
         if cmd_name in MAIN_BOT_ONLY_COMMANDS and not is_main_bot:
             return
@@ -1103,6 +1186,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "panel": lambda u, c: c.bot.send_message(chat_id=chat_id, text="🎛️ BATTLE-DECK CONTROL PANEL:", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Abort All Active Tasks 🚨", callback_data="stop_all")]])),
             "gcnc": cmd_gcnc, "vgcnc": cmd_vgcnc, "stopgcnc": cmd_stopgcnc,
             "target": cmd_target, "vtarget": cmd_vtarget, "stoptarget": cmd_stoptarget,
+            "catch": cmd_catch, "stopcatch": cmd_stopcatch,
             "spam": cmd_spam, "stopspam": cmd_stopspam,
             "flood": cmd_flood, "vflood": cmd_vflood, "stopflood": cmd_stopflood,
             "gcpfp": cmd_gcpfp, "stopgcpfp": cmd_stopgcpfp,
