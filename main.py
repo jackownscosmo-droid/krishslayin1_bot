@@ -85,7 +85,7 @@ AUTOREPLY_LINES = [
 
 TARGET_LINES = [
     r"""˚∧＿∧   +        — ͟͞͞🥛 (  •‿• )つ  Special attack: teri mummy ka dudh 😂😂""",
-    r"""𝙉𝙀𝙆𝘼𝘼𝘼𝙇 𝙈𝘼𝘿𝘼𝘼𝙍𝘾𝙃𝘿👍🏼👍🏼👍🏼👍🏼👍🏼""",
+    r"""𝙉𝙀𝙆𝘼𝘼𝘼𝙇 𝙈𝘼ДА𝘼𝙍𝘾𝙃𝘿👍🏼👍🏼👍🏼👍🏼👍🏼""",
     r"""तेरी बहन का भोसड़ा 😂🤸🏻‍♂️😂🤸🏻‍♂️ 𝘾𝙃𝙐𝙋 𝙍𝙉𝘿𝙄𝙆𝙀"""
 ]
 
@@ -1185,13 +1185,12 @@ async def cmd_ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def send_single_ping(bot):
         try:
             start = time.time()
-            me = await bot.get_me()
             latency = round((time.time() - start) * 1000, 2)
             indicator = "🟢" if latency < 700.0 else "🔴"
-            text = f"🏓 Pong! @{me.username}: {latency}ms {indicator}"
-            
+            text = f"🪅 Pong! {latency}ms {indicator}"
+
             msg = await bot.send_message(chat_id=chat_id, text=text)
-            
+
             async def auto_delete():
                 await asyncio.sleep(120)
                 try:
@@ -1226,7 +1225,7 @@ async def cmd_omg(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif reply.voice: file_obj = await reply.voice.get_file()
 
         file_bytes = await file_obj.download_as_bytearray()
-        await context.bot.send_message(chat_id=update.effective_user.id, text=f"🔓 MEDIA EXTRACTED VIA KRISHSLAYIN ✝️️\nChat: {update.effective_chat.title}")
+        await context.bot.send_message(chat_id=update.effective_user.id, text=f"🔓 MEDIA EXTRACTED VIA KRISHSLAYIN ✝\nChat: {update.effective_chat.title}")
         
         if reply.photo:
             await context.bot.send_photo(chat_id=update.effective_user.id, photo=bytes(file_bytes))
