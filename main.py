@@ -43,7 +43,7 @@ REACTION_EMOJI = "🤣"
 CATCH_LINES = [
     "{name} 𝘽𝙃𝘼𝙂𝘼 𝘽𝙃𝘼𝙂𝘼 𝙆𝙀 𝙈𝘼𝙍𝙐𝙉𝙂𝘼 🤣🩷🙌🏾",
     "{name} 𝙃𝙊𝙎𝙃 𝙈𝙀 𝘼𝘼 𝙍𝙉𝘿𝙄𝙆𝙀",
-    "{name} 𝐀𝐫𝐞𝐞𝐞𝐞 𝐓𝐞𝐫𝐢 𝐦𝐚𝐚𝐚 𝐫𝐧𝐝𝐢 😂😂😂😂👉🏻☝🏻🤸🏻🧑🏻‍🦯🏃🏻🧑🏻‍🦯⛹🏻🧑🏻‍🦯🧘🏻🧑🏻‍🦯🛌🏻🧘🏻",
+    "{name} 𝐀𝐫𝐞𝐞𝐞𝐞 𝐓𝐞𝐫𝐢 𝐦𝐚𝐚𝐚 𝐫𝐧𝐝𝐢 😂😂😂😂👉🏻☝🏻🤸🏻🧑🏻‍🦯🏃🏻🧑🏻‍‍🦯⛹🏻🧑🏻‍🦯🧘🏻🧑🏻‍🦯🛌🏻🧘🏻",
     "{name} 🖋️ ये ले pen इससे अपने सर पे रंडीका बच्चा लिख दे",
     "{name} 𝙥𝙖𝙥𝙖 𝙗𝙤𝙡 𝙘𝙝𝙤𝙧 𝙙𝙪𝙣𝙜𝙖𝙖𝙖𝙖 𝙧𝙣𝙙𝙮 𝙠𝙚 𝙗𝙘𝙝𝙚",
     "{name} Tera maiya chod ke bhaiya nikaal dnege maderchodⓘ यह संदेश हटा दिया गया था क्योंकि तेरी माँ रेंडी",
@@ -51,7 +51,7 @@ CATCH_LINES = [
     "{name} 𝙘𝙝𝙪𝙥 𝙜𝙧𝙞𝙗 𝙠𝙞𝙣𝙣𝙚𝙧 𝙧𝙣𝙙𝙮😆😆🔥",
     "{name} तेरी मां की चूतड़ फाड़ दूंगा 𝐁ʜड़वे 𝐂ᴜᴅ अब 😁💪🏿🔥😁💪🏿🔥😁💪🏿🔥😁💪🏿🔥",
     "{name} 𝐓ᴏᴍᴍʏ 𝐒ʜᴜ 𝐒ʜᴜ 🐕🔥🐕🔥",
-    "{name} 𝐁𝐀𝐇𝐀𝐑 𝐀𝐀 𝐑𝐔𝐍𝐃𝐘𝐊𝐄 𝐋𝐀𝐃𝐊𝐄 🐦‍🔥⛓️‍💥",
+    "{name} 𝐁𝐀𝐇𝐀𝐑 𝐀𝐀 𝐑𝐔𝐍𝐃𝐘𝐊𝐄 𝐋𝐀𝐃𝐊𝐄 🐦‍‍🔥⛓️‍💥",
     "{name} तेरी मां को इतना chodunga की स्टोरी लगाके जस्टिस मांगेगा"
 ]
 
@@ -613,7 +613,6 @@ async def cmd_adminlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 lvl = chat_data["admin_levels"][user.id]
                 tag = "🥇" if lvl == 1 else "🥈"
                 bot_admin_lines.append(f"• {user.first_name} : Admin {tag}")
-            # Manual admins hidden as requested
 
         list_content = ["Admin List 🥈🥇\n", "━━━━━━━━━━━━━━━━━━━━━━"]
         if owner_line:
@@ -1180,17 +1179,30 @@ async def cmd_scan(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await send_auto_delete_msg(context, update.effective_chat.id, f"📊 CHAT MATRIX SCAN:\n• Title: {chat.title}\n• ID: {chat.id}\n• Members: {members}", delay=120)
 
 async def cmd_ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    start = time.time()
-    for bot in BOT_INSTANCES:
+    chat_id = update.effective_chat.id
+    active_bots = await get_active_bots_in_chat(chat_id)
+
+    async def send_single_ping(bot):
         try:
+            start = time.time()
+            me = await bot.get_me()
             latency = round((time.time() - start) * 1000, 2)
             indicator = "🟢" if latency < 700.0 else "🔴"
-            await send_auto_delete_msg(
-                context, update.effective_chat.id, 
-                f"📡 Latency Telemetry:\nPING: {latency}ms {indicator}", 
-                delay=120
-            )
-        except Exception: pass
+            text = f"🏓 Pong! @{me.username}: {latency}ms {indicator}"
+            
+            msg = await bot.send_message(chat_id=chat_id, text=text)
+            
+            async def auto_delete():
+                await asyncio.sleep(120)
+                try:
+                    await msg.delete()
+                except Exception:
+                    pass
+            asyncio.create_task(auto_delete())
+        except Exception:
+            pass
+
+    await asyncio.gather(*(send_single_ping(b) for b in active_bots))
 
 async def cmd_getid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     target = update.message.reply_to_message.from_user if update.message.reply_to_message else update.effective_user
@@ -1214,7 +1226,7 @@ async def cmd_omg(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif reply.voice: file_obj = await reply.voice.get_file()
 
         file_bytes = await file_obj.download_as_bytearray()
-        await context.bot.send_message(chat_id=update.effective_user.id, text=f"🔓 MEDIA EXTRACTED VIA KRISHSLAYIN ✝️\nChat: {update.effective_chat.title}")
+        await context.bot.send_message(chat_id=update.effective_user.id, text=f"🔓 MEDIA EXTRACTED VIA KRISHSLAYIN ✝️️\nChat: {update.effective_chat.title}")
         
         if reply.photo:
             await context.bot.send_photo(chat_id=update.effective_user.id, photo=bytes(file_bytes))
@@ -1519,6 +1531,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             os.remove(fname)
         except Exception: pass
 
+    # --- MULTI-BOT REACTION LOGIC ---
     react_mode = GLOBAL_CHAT_REACT_MODE.get(chat_id)
     if react_mode is not None and not is_valid_cmd and is_main_bot:
         should_react = False
@@ -1529,13 +1542,20 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
                 should_react = True
 
         if should_react:
-            try:
-                await context.bot.set_message_reaction(
-                    chat_id=chat_id, 
-                    message_id=update.message.message_id, 
-                    reaction=[REACTION_EMOJI]
-                )
-            except Exception: pass
+            async def fire_reactions(target_msg_id):
+                active_bots = await get_active_bots_in_chat(chat_id)
+                async def react_single(bot):
+                    try:
+                        await bot.set_message_reaction(
+                            chat_id=chat_id, 
+                            message_id=target_msg_id, 
+                            reaction=[REACTION_EMOJI]
+                        )
+                    except Exception: pass
+
+                await asyncio.gather(*(react_single(b) for b in active_bots))
+
+            asyncio.create_task(fire_reactions(update.message.message_id))
 
     if is_valid_cmd:
         if cmd_name in MAIN_BOT_ONLY_COMMANDS and not is_main_bot:
