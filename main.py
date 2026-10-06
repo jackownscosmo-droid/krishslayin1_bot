@@ -62,7 +62,7 @@ TARGET_15_LINES = [
     "तेरी maa rundy 😜🙀⚡तेरी maa rundy 😜🙀⚡",
     "Oye message mat kar warna ᴛᴇʀɪ ᴍᴀᴀ ᴄʜᴏᴅ dunga🤣🤣",
     "अच्छा teri maa के बूब्स पे green veins h इसलिए tu itna खिलसता h 😂👏🏻",
-    "𝐄ɴᴛʀʏ 𝐋ᴇʟɪ 𝐓ᴏ 𝐀sᴍᴀɴ 𝐊ɪ 𝐔ᴄʜᴀɪᴏ 𝐏ᴇ 𝐓ᴇʀɪ 𝐌ᴀ 𝐂ʜᴜᴅᴇɢɪ / 🌘🕊️",
+    "𝐄ɴᴛʀʏ 𝐋ᴇʟɪ 𝐓ᴏ 𝐀sᴍᴀɴ 𝐊ɪ 𝐔ᴄʜᴀɪᴏ 𝐏ᴇ 𝐓ᴇʀɪ 𝐌ᴀ 𝐂ʜᴜᴅᴇɢɪ / 🌘🕊️️",
     "Teri Maa Ko Football ⚽ bnake uske 𝗕𝗛😈𝗦แด pe laat 🦶🏻 marunga 🤩🔥",
     "Tri maa ke bosde pr jcb se khudai krwa duga rndyke😂😂🤟💥💥🤟",
     "Le धमाकेदार mukka kha रन्डी ke चाइल्ड 👊🏻👊🏻👊🏻🤣🤣",
@@ -71,7 +71,7 @@ TARGET_15_LINES = [
     "randy pane me to teri ma aval darje ki hakdaar he😁👍😁👍😁👍😁👍",
     "𝘿𝙃𝘼𝙏 ʳⁿᵈⁱᵏᵉʸ 🤦🏿‍♂️💢𝘿𝙃𝘼𝙏 ʳⁿᵈⁱᵏᵉʸ 🤦🏿‍♂️💢",
     "ᗷᑌᖇ ᗪᗴᗪO Tᑌᕼᗩᖇ ᗰᗩIYᗩ Kᗴ 😂💔🤤🫦👅🤡",
-    "𝐓ᴇʀɪ 𝐌ᴀᴀ 𝐂ʜᴜᴅᴋᴇ 𝐁ʜᴀᴀɢ 𝐑ᴀʜɪ -> 🏃🏻‍♀️🔥🏃🏻‍♀️🔥"
+    "𝐓ᴇʀɪ 𝐌ᴀᴀ 𝐂ʜᴜᴅᴋᴇ 𝐁ʜᴀᴀɢ 𝐑ᴀʜɪ -> 🏃🏻‍♀️🔥🏃🏻‍♀️️🔥"
 ]
 
 AUTOREPLY_LINES = [
@@ -86,13 +86,19 @@ AUTOREPLY_LINES = [
 TARGET_LINES = [
     r"""˚∧＿∧   +        — ͟͞͞🥛 (  •‿• )つ  Special attack: teri mummy ka dudh 😂😂""",
     r"""𝙉𝙀𝙆𝘼𝘼𝘼𝙇 𝙈𝘼ДА𝘼𝙍𝘾𝙃𝘿👍🏼👍🏼👍🏼👍🏼👍🏼""",
-    r"""तेरी बहन का भोसड़ा 😂🤸🏻‍♂️😂🤸🏻‍♂️ 𝘾𝙃𝙐𝙋 𝙍𝙉𝘿𝙄𝙆𝙀"""
+    r"""तेरी बहन का भोसड़ा 😂🤸🏻‍♂️😂🤸🏻‍♂️ 𝘾𝙃𝙐𝙋 𝙍𝙉𝘿𝙄𝙆𝙀""",
+    r"""𝗚𝗢𝗢𝗗 𝗠𝗢𝗥𝗡𝗜𝗡𝗚 𝗥𝗔𝗡𝗗𝗜 𝗝𝗜 𝗔𝗣𝗞𝗘 𝗖𝗛𝗨𝗗𝗡𝗘 𝗞𝗔 𝗧𝗘𝗠 𝗛𝗢𝗚𝗬𝗔 👍🏿👍🏿👍🏿👍🏿👍🏿👍🏿""",
+    r"""तेरी माँ or मेरे हसीन पल यहाँ डाल दू?  1.xvideos.com 2.xhamster.com. 3.xnxx.com 4. okporn.com 5. xxx.videos.in😝👈🏻""",
+    r"""Nepal 🇳🇵se lekar japan 🇯🇵 tak तेरी 𝙧𝙖𝙣𝙙𝙞 माँ 𝙠𝙚 𝙠𝙞𝙨𝙨𝙚𝙮 मशहूर है 😂🔥😂🔥""",
+    r"""यहा 👈भी chodu वहा 👉 भी chodu तेरी माँ 🤱 को पूरे जहान 🌍 मे chodu मेरा ही जलवा 😎🥰🤘🤙𝑺𝒊𝒏 𝒄𝒐𝒔 𝒕𝒂𝒏 𝑻𝒆𝒓𝒊 𝒎𝒖𝒎𝒎𝒚 𝒎𝒆𝒓𝒊 𝒇𝒂𝒏 🙏👿👿🙏"""
+
 ]
+
 
 FLOOD_LINES = [
     r"""𝙏𝙚𝙧𝙞 𝙢𝙖𝙖 𝙠𝙚 𝙗𝙝𝙤𝙨𝙙𝙚 𝙢𝙚 𝙡𝙖𝙩 𝙥𝙙𝙚𝙣𝙜𝙚 𝙗𝙝𝙤𝙩 𝙩𝙚𝙯 👻 😂👯😂👯""",
     r"""तेरो ma ko चोदने k बाद उसको ऐसे चंद सितारए नजर आएंगे""",
-    r"""😝 Beta 🥶 लंड 🔥 पकड़ 😡 muh 😜 pe 😁 रगड़ 😂"""
+    r"""😝 Beta 🥶 लंड 🔥 पकड़ 😡 muh 😜 pe 😁 रगड़ 😂""" 
 ]
 
 ROASTS_HI = [
@@ -166,7 +172,6 @@ async def is_level1_or_manual_admin(chat_id: int, user_id: int, context: Context
         return True
     if level == 2:
         return False
-    # Check if manually assigned admin in Telegram
     try:
         member = await context.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
         if member.status == "creator" or (member.status == "administrator" and member.can_promote_members):
@@ -225,7 +230,7 @@ def get_menu_keyboard(page: int):
                 InlineKeyboardButton("⛓️ DARK TARGETING 🎯", callback_data="menu_3")
             ],
             [
-                InlineKeyboardButton("BLACKOUT CONTROL 🛡️", callback_data="menu_4"),
+                InlineKeyboardButton("BLACKOUT CONTROL 🛡️️", callback_data="menu_4"),
                 InlineKeyboardButton("OWNER CONTROL 🎛️", callback_data="menu_5")
             ],
             [InlineKeyboardButton("🎛️ Open Control Panel", callback_data="open_panel")],
@@ -1185,6 +1190,7 @@ async def cmd_ping(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def send_single_ping(bot):
         try:
             start = time.time()
+            await bot.get_me()
             latency = round((time.time() - start) * 1000, 2)
             indicator = "🟢" if latency < 700.0 else "🔴"
             text = f"🪅 Pong! {latency}ms {indicator}"
@@ -1379,6 +1385,8 @@ async def cmd_slayinpowertaken(update: Update, context: ContextTypes.DEFAULT_TYP
     target_id = int(args[0]) if args and args[0].isdigit() else (update.message.reply_to_message.from_user.id if update.message.reply_to_message else None)
     if target_id and target_id != OWNER_ID:
         AUTHORIZED_ADMINS.discard(target_id)
+        if update.effective_chat.id in CHAT_TASKS:
+            CHAT_TASKS[update.effective_chat.id]["admin_levels"].pop(target_id, None)
         await send_auto_delete_msg(context, update.effective_chat.id, f"🗑️ Admin rights revoked from {target_id}.", delay=120)
 
 async def cmd_slayinfor(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1508,7 +1516,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
 
     # Regular Autoreply Logic
     autoreply_map = chat_data.get("autoreply", {})
-    if (user_id in autoreply_map or username in autoreply_map) and is_main_bot:
+    if (user_id in autoreply_map or username in autoreply_map):
         target_key = user_id if user_id in autoreply_map else username
         custom_val = autoreply_map[target_key]
         reply_text = random.choice(AUTOREPLY_LINES) if custom_val == "RANDOM_LINES" else custom_val
@@ -1557,6 +1565,8 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             asyncio.create_task(fire_reactions(update.message.message_id))
 
     if is_valid_cmd:
+        if not is_admin(user_id):
+            return
         if cmd_name in MAIN_BOT_ONLY_COMMANDS and not is_main_bot:
             return
 
