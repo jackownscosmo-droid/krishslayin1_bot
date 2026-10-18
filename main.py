@@ -938,33 +938,78 @@ async def cmd_stopflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
         del chat_data["tasks"]["flood"]
         await send_auto_delete_msg(context, update.effective_chat.id, "🛑 Flood stopped.", delay=120)
 
+
 async def cmd_gcpfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     reply = update.message.reply_to_message
-    if not reply or not reply.photo: return await send_auto_delete_msg(context, update.effective_chat.id, "Reply to an image.", delay=120)
-    file_id = reply.photo[-1].file_id
-    chat_data = get_chat_data(update.effective_chat.id)
-    if "gcpfp" in chat_data["tasks"]: chat_data["tasks"]["gcpfp"].cancel()
+    if not reply or not reply.photo: 
+        return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Please reply to an image with `+gcpfp <time>` (e.g., `+gcpfp 1s` or `+gcpfp 500ms`)", delay=120)
 
+    # Argument parse karke speed / time nikalna
+    args = update.message.text.split()[1:]
+    delay = 3.0  # Default delay 3 seconds
+    time_str = "3s"
+
+    if args:
+        time_str = args[0].lower()
+        try:
+            if time_str.endswith("ms"):
+                delay = float(time_str.replace("ms", "")) / 1000.0
+            elif time_str.endswith("s"):
+                delay = float(time_str.replace("s", ""))
+            else:
+                delay = float(time_str)
+        except ValueError:
+            return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Invalid time format! Use formats like `0.1s`, `500ms`, or `5s`.", delay=120)
+
+    # Time limit: 0.1ms (0.0001s) se लेकर 15s tak
+    delay = max(0.0001, min(15.0, delay))
+
+    # Reply ki photo ka high-res version get karke bytes/buffer download karna
+    try:
+        photo_file = await reply.photo[-1].get_file()
+        photo_bytes = bytes(await photo_file.download_as_bytearray())
+    except Exception as e:
+        return await send_auto_delete_msg(context, update.effective_chat.id, f"❌ Failed to download photo: {str(e)}", delay=120)
+
+    chat_data = get_chat_data(update.effective_chat.id)
+    if "gcpfp" in chat_data["tasks"]: 
+        chat_data["tasks"]["gcpfp"].cancel()
+
+    # Saare bots bari-bari (turn-by-turn) profile photo change karenge
     async def multi_photo_loop():
         bot_idx = 0
-        total_bots = len(BOT_INSTANCES)
         while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
-            try: await current_bot.set_chat_photo(chat_id=update.effective_chat.id, photo=file_id)
-            except Exception: pass
+            active_bots = await get_active_bots_in_chat(update.effective_chat.id)
+            if not active_bots:
+                active_bots = BOT_INSTANCES
+            
+            current_bot = active_bots[bot_idx % len(active_bots)]
+            try:
+                # Direct photo bytes send karke chat photo update karna
+                await current_bot.set_chat_photo(chat_id=update.effective_chat.id, photo=photo_bytes)
+            except Exception:
+                pass
+            
             bot_idx += 1
-            await asyncio.sleep(3)
+            await asyncio.sleep(delay)
 
     task = asyncio.create_task(multi_photo_loop())
     chat_data["tasks"]["gcpfp"] = task
+    await send_auto_delete_msg(
+        context, 
+        update.effective_chat.id, 
+        f"📸 **Cluster GCPFP Loop Activated!**\n• Interval: `{time_str}` ({delay}s)\n• Rotation: Turn-by-turn across all active bots.", 
+        delay=120
+    )
 
 async def cmd_stopgcpfp(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcpfp" in chat_data["tasks"]:
         chat_data["tasks"]["gcpfp"].cancel()
         del chat_data["tasks"]["gcpfp"]
-        await send_auto_delete_msg(context, update.effective_chat.id, "🛑 Photo loop disarmed.", delay=120)
+        await send_auto_delete_msg(context, update.effective_chat.id, "🛑 Photo loop disarmed successfully across all cluster bots.", delay=120)
+        
 
 async def cmd_voiceflood(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
