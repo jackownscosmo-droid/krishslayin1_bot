@@ -5,7 +5,6 @@ import random
 import asyncio
 import logging
 import sys
-
 # Windows aur kuch terminals mein output force UTF-8 karne ke liye
 if sys.stdout.encoding.lower() != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8')
@@ -632,77 +631,123 @@ async def cmd_adminlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- Combat Commands ---
 
+async def parse_time_argument(time_str: str) -> float:
+    """Helper function to parse ms and s timing formats (0.1ms to 3s)"""
+    time_str = time_str.lower().strip()
+    try:
+        if time_str.endswith("ms"):
+            val = float(time_str.replace("ms", "")) / 1000.0
+        elif time_str.endswith("s"):
+            val = float(time_str.replace("s", ""))
+        else:
+            val = float(time_str)
+        # Limit between 0.0001s (0.1ms) and 3.0s
+        return max(0.0001, min(3.0, val))
+    except ValueError:
+        return 0.05  # Default fallback speed
+
+
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
-    speed = 0.3
-    name = "KRISHSLAYIN"
+    
+    speed = 0.05
+    raw_text = "KRISHSLAYIN"
+    time_str = "0.05s"
 
     if args:
-        try:
-            speed = float(args[0])
-            name = " ".join(args[1:]) if len(args) > 1 else "KRISHSLAYIN"
-        except ValueError:
-            name = " ".join(args)
+        # Check if first argument is a time format (e.g., 0.1ms, 500ms, 1s, 2s, 3s)
+        first_arg = args[0].lower()
+        if any(first_arg.endswith(unit) for unit in ["ms", "s"]) or first_arg.replace('.', '', 1).isdigit():
+            time_str = args[0]
+            speed = await parse_time_argument(time_str)
+            raw_text = " ".join(args[1:]) if len(args) > 1 else "KRISHSLAYIN"
+        else:
+            raw_text = " ".join(args)
 
-    chat_data = get_chat_data(update.effective_chat.id)
-    if "gcnc" in chat_data["tasks"]: chat_data["tasks"]["gcnc"].cancel()
+    # Automatically add your requested special symbols in front of the text
+    prefix_symbols = "𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙"
+    name = f"{prefix_symbols} {raw_text}"
 
-    async def multi_gcnc_loop():
-        titles = [f"⚡ {name} ⚡", f"🔥 {name} 🔥", f"👑 {name} 👑"]
+    chat_id = update.effective_chat.id
+    chat_data = get_chat_data(chat_id)
+    if "gcnc" in chat_data["tasks"]: 
+        chat_data["tasks"]["gcnc"].cancel()
+
+    async def fast_turn_gcnc_loop():
+        titles = [f"⚡ {name} ⚡", f"🔥 {name} 🔥", f"👑 {name} 👑", f"💀 {name} 💀"]
         title_idx = 0
         bot_idx = 0
-        total_bots = len(BOT_INSTANCES)
         while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
-            try:
-                await current_bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[title_idx % len(titles)])
-                title_idx += 1
-            except Exception: pass
-            bot_idx += 1
-            await asyncio.sleep(speed if speed > 0 else 0.05)
+            active_bots = await get_active_bots_in_chat(chat_id)
+            if not active_bots:
+                active_bots = BOT_INSTANCES
 
-    task = asyncio.create_task(multi_gcnc_loop())
+            current_bot = active_bots[bot_idx % len(active_bots)]
+            try:
+                await current_bot.set_chat_title(chat_id=chat_id, title=titles[title_idx % len(titles)])
+                title_idx += 1
+            except Exception:
+                pass
+            
+            bot_idx += 1
+            await asyncio.sleep(speed)
+
+    task = asyncio.create_task(fast_turn_gcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await send_auto_delete_msg(context, update.effective_chat.id, f"⚔️ All {len(BOT_INSTANCES)} Cluster Bots engaged in GCNC Loop (Speed: {speed}s).", delay=120)
+    await send_auto_delete_msg(context, chat_id, f"⚡ **GCNC Engaged!**\n• Speed: `{time_str}`\n• Target Text: `{raw_text}`", delay=120)
+    
 
 async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
-    raw_text = update.message.text.replace("+vgcnc", "").strip()
-    parts = raw_text.split(" ", 1)
+    raw_input = update.message.text.replace("+vgcnc", "").strip()
+    parts = raw_input.split(" ", 1)
     
-    speed = 0.3
+    speed = 0.05
+    time_str = "0.05s"
     titles_raw = ""
 
     if len(parts) > 0:
-        try:
-            speed = float(parts[0])
+        first_part = parts[0].lower()
+        # Check if first part is a time format
+        if any(first_part.endswith(unit) for unit in ["ms", "s"]) or first_part.replace('.', '', 1).isdigit():
+            time_str = parts[0]
+            speed = await parse_time_argument(time_str)
             titles_raw = parts[1] if len(parts) > 1 else ""
-        except ValueError:
-            titles_raw = raw_text
+        else:
+            titles_raw = raw_input
 
     titles = [t.strip() for t in titles_raw.split("|") if t.strip()]
-    if not titles: return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +vgcnc [speed] Title 1 | Title 2", delay=120)
+    if not titles: 
+        return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +vgcnc [timing] Title 1 | Title 2 (e.g., +vgcnc 500ms Hello | World)", delay=120)
 
-    chat_data = get_chat_data(update.effective_chat.id)
-    if "gcnc" in chat_data["tasks"]: chat_data["tasks"]["gcnc"].cancel()
+    chat_id = update.effective_chat.id
+    chat_data = get_chat_data(chat_id)
+    if "gcnc" in chat_data["tasks"]: 
+        chat_data["tasks"]["gcnc"].cancel()
 
-    async def multi_vgcnc_loop():
+    async def fast_turn_vgcnc_loop():
         title_idx = 0
         bot_idx = 0
-        total_bots = len(BOT_INSTANCES)
         while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
-            try:
-                await current_bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[title_idx % len(titles)])
-                title_idx += 1
-            except Exception: pass
-            bot_idx += 1
-            await asyncio.sleep(speed if speed > 0 else 0.05)
+            active_bots = await get_active_bots_in_chat(chat_id)
+            if not active_bots:
+                active_bots = BOT_INSTANCES
 
-    task = asyncio.create_task(multi_vgcnc_loop())
+            current_bot = active_bots[bot_idx % len(active_bots)]
+            try:
+                await current_bot.set_chat_title(chat_id=chat_id, title=titles[title_idx % len(titles)])
+                title_idx += 1
+            except Exception:
+                pass
+            
+            bot_idx += 1
+            await asyncio.sleep(speed)
+
+    task = asyncio.create_task(fast_turn_vgcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await send_auto_delete_msg(context, update.effective_chat.id, f"⚡ All {len(BOT_INSTANCES)} Cluster Bots engaged in VGCNC Rotator (Speed: {speed}s).", delay=120)
+    await send_auto_delete_msg(context, chat_id, f"⚡ **VGCNC Rotator Engaged!**\n• Speed: `{time_str}`\n• Total Titles: `{len(titles)}`", delay=120)
+
 
 async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
