@@ -725,16 +725,6 @@ async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update")
-
-async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    chat_data = get_chat_data(chat_id)
-    if "gcnc" in chat_data["tasks"]:
-        chat_data["tasks"]["gcnc"].cancel()
-        del chat_data["tasks"]["gcnc"]
-        
         stop_text = (
             "🛡️ **SYSTEM OVERRIDE SUCCESSFUL**\n"
             "────────────────────────────\n"
