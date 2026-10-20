@@ -640,158 +640,93 @@ async def cmd_adminlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
 
 # --- Combat Commands ---
-async def parse_time_argument(time_str: str) -> float:
-    """Helper function to parse ms and s timing formats (0.1ms to 3s)"""
-    time_str = time_str.lower().strip()
-    try:
-        if time_str.endswith("ms"):
-            val = float(time_str.replace("ms", "")) / 1000.0
-        elif time_str.endswith("s"):
-            val = float(time_str.replace("s", ""))
-        else:
-            val = float(time_str)
-        return max(0.0001, min(3.0, val))
-    except ValueError:
-        return 0.3
-
+SYMBOLS = "𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙"
 
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update.effective_user.id): 
-        return
+    if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
-    
     speed = 0.3
-    time_str = "0.3s"
-    raw_name = "KRISHSLAYIN"
+    name = "KRISHSLAYIN"
 
     if args:
-        first_arg = args[0].lower()
-        if any(first_arg.endswith(unit) for unit in ["ms", "s"]) or first_arg.replace('.', '', 1).isdigit():
-            time_str = args[0]
-            speed = await parse_time_argument(time_str)
-            raw_name = " ".join(args[1:]) if len(args) > 1 else "KRISHSLAYIN"
-        else:
-            raw_name = " ".join(args)
+        try:
+            speed = float(args[0])
+            name = " ".join(args[1:]) if len(args) > 1 else "KRISHSLAYIN"
+        except ValueError:
+            name = " ".join(args)
 
-    # User ke text ke theek baad bina kisi space ke symbols attach karna
-    symbols_block = "𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙"
-    name = f"{raw_name}{symbols_block}"
+    name = f"{name} {SYMBOLS}"
 
-    chat_id = update.effective_chat.id
-    chat_data = get_chat_data(chat_id)
-    if "gcnc" in chat_data["tasks"]: 
-        chat_data["tasks"]["gcnc"].cancel()
+    chat_data = get_chat_data(update.effective_chat.id)
+    if "gcnc" in chat_data["tasks"]: chat_data["tasks"]["gcnc"].cancel()
 
     async def multi_gcnc_loop():
         titles = [f"⚡ {name} ⚡", f"🔥 {name} 🔥", f"👑 {name} 👑"]
         title_idx = 0
         bot_idx = 0
+        total_bots = len(BOT_INSTANCES)
         while True:
-            active_bots = await get_active_bots_in_chat(chat_id)
-            if not active_bots:
-                active_bots = BOT_INSTANCES
-            
-            current_bot = active_bots[bot_idx % len(active_bots)]
+            current_bot = BOT_INSTANCES[bot_idx % total_bots]
             try:
-                # Non-blocking execution with tight exception shield
-                await current_bot.set_chat_title(chat_id=chat_id, title=titles[title_idx % len(titles)])
+                await current_bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[title_idx % len(titles)])
                 title_idx += 1
-            except Exception:
-                pass
-            
+            except Exception: pass
             bot_idx += 1
             await asyncio.sleep(speed if speed > 0 else 0.05)
 
     task = asyncio.create_task(multi_gcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    
-    confirm_text = (
-        "⚔️ **CLUSTER COMBAT MODULE ACTIVATED**\n"
-        "────────────────────────────\n"
-        f"• Protocol : `GCNC Loop`\n"
-        f"• Interval : `{time_str}`\n"
-        f"• Active Nodes : `{len(BOT_INSTANCES)} Bots`\n"
-        f"• Target Prefix : `{raw_name}`"
-    )
-    await send_auto_delete_msg(context, chat_id, confirm_text, delay=120, parse_mode="Markdown")
-
+    await send_auto_delete_msg(context, update.effective_chat.id, f"⚔️ All {len(BOT_INSTANCES)} Cluster Bots engaged in GCNC Loop (Speed: {speed}s).", delay=120)
 
 async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if not is_admin(update.effective_user.id): 
-        return
-    raw_input = update.message.text.replace("+vgcnc", "").strip()
-    parts = raw_input.split(" ", 1)
+    if not is_admin(update.effective_user.id): return
+    raw_text = update.message.text.replace("+vgcnc", "").strip()
+    parts = raw_text.split(" ", 1)
     
     speed = 0.3
-    time_str = "0.3s"
     titles_raw = ""
 
     if len(parts) > 0:
-        first_part = parts[0].lower()
-        if any(first_part.endswith(unit) for unit in ["ms", "s"]) or first_part.replace('.', '', 1).isdigit():
-            time_str = parts[0]
-            speed = await parse_time_argument(time_str)
+        try:
+            speed = float(parts[0])
             titles_raw = parts[1] if len(parts) > 1 else ""
-        else:
-            titles_raw = raw_input
+        except ValueError:
+            titles_raw = raw_text
 
-    symbols_block = "𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙"
-    titles = [f"{t.strip()}{symbols_block}" for t in titles_raw.split("|") if t.strip()]
-    
-    if not titles: 
-        return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Usage: `+vgcnc [time] Title 1 | Title 2`", delay=120, parse_mode="Markdown")
+    titles = [f"{t.strip()} {SYMBOLS}" for t in titles_raw.split("|") if t.strip()]
+    if not titles: return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +vgcnc [speed] Title 1 | Title 2", delay=120)
 
-    chat_id = update.effective_chat.id
-    chat_data = get_chat_data(chat_id)
-    if "gcnc" in chat_data["tasks"]: 
-        chat_data["tasks"]["gcnc"].cancel()
+    chat_data = get_chat_data(update.effective_chat.id)
+    if "gcnc" in chat_data["tasks"]: chat_data["tasks"]["gcnc"].cancel()
 
     async def multi_vgcnc_loop():
         title_idx = 0
         bot_idx = 0
+        total_bots = len(BOT_INSTANCES)
         while True:
-            active_bots = await get_active_bots_in_chat(chat_id)
-            if not active_bots:
-                active_bots = BOT_INSTANCES
-            
-            current_bot = active_bots[bot_idx % len(active_bots)]
+            current_bot = BOT_INSTANCES[bot_idx % total_bots]
             try:
-                await current_bot.set_chat_title(chat_id=chat_id, title=titles[title_idx % len(titles)])
+                await current_bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[title_idx % len(titles)])
                 title_idx += 1
-            except Exception: 
-                pass
-            
+            except Exception: pass
             bot_idx += 1
             await asyncio.sleep(speed if speed > 0 else 0.05)
 
     task = asyncio.create_task(multi_vgcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    
-    confirm_text = (
-        "⚡ **ROTATION MATRIX ENGAGED**\n"
-        "────────────────────────────\n"
-        f"• Protocol : `VGCNC Rotator`\n"
-        f"• Interval : `{time_str}`\n"
-        f"• Active Nodes : `{len(BOT_INSTANCES)} Bots`\n"
-        f"• Total Titles : `{len(titles)}`"
-    )
-    await send_auto_delete_msg(context, chat_id, confirm_text, delay=120, parse_mode="Markdown")
-
+    await send_auto_delete_msg(context, update.effective_chat.id, f"⚡ All {len(BOT_INSTANCES)} Cluster Bots engaged in VGCNC Rotator (Speed: {speed}s).", delay=120)
 
 async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat_id = update.effective_chat.id
-    chat_data = get_chat_data(chat_id)
+    chat_data = get_chat_data(update.effective_chat.id)
     if "gcnc" in chat_data["tasks"]:
         chat_data["tasks"]["gcnc"].cancel()
         del chat_data["tasks"]["gcnc"]
-        
-        stop_text = (
-            "🛡️ **SYSTEM OVERRIDE SUCCESSFUL**\n"
-            "────────────────────────────\n"
-            "• Status : `Title Loop Disarmed`\n"
-            "• Cluster : `All Nodes Stabilized`"
-        )
-        await send_auto_delete_msg(context, chat_id, stop_text, delay=120, parse_mode="Markdown")
+        await send_auto_delete_msg(context, update.effective_chat.id, "🛑 Title loop disarmed across all cluster bots.", delay=120)
+
+
+
+async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update")
 
 async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
