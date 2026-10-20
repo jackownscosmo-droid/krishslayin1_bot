@@ -666,7 +666,7 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
             raw_text = " ".join(args)
 
     # Automatically add your requested special symbols in front of the text
-    prefix_symbols = "𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙"
+    prefix_symbols = "𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙"
     name = f"{prefix_symbols} {raw_text}"
 
     chat_id = update.effective_chat.id
