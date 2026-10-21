@@ -745,14 +745,22 @@ async def cmd_spam(update: Update, context: ContextTypes.DEFAULT_TYPE):
         bot_idx = 0
         total_bots = len(BOT_INSTANCES)
         while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
-            try: await current_bot.send_message(chat_id=update.effective_chat.id, text=text)
-            except Exception: pass
-            bot_idx += 1
-            await asyncio.sleep(0.12)
+            # 500ms ke andar 4 messages bhejne ke liye loop (har message ke beech ~0.125s delay)
+            for _ in range(4):
+                current_bot = BOT_INSTANCES[bot_idx % total_bots]
+                try: 
+                    await current_bot.send_message(chat_id=update.effective_chat.id, text=text)
+                except Exception: 
+                    pass
+                bot_idx += 1
+                await asyncio.sleep(0.125)
+            
+            # 200ms ka cooldown gap
+            await asyncio.sleep(0.2)
 
     task = asyncio.create_task(multi_spam_loop())
     chat_data["tasks"]["spam"] = task
+    await send_auto_delete_msg(context, update.effective_chat.id, "⚡ Burst Spam Activated: 4 msgs in 500ms with 200ms cooldown!", delay=120)
 
 async def cmd_stopspam(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
