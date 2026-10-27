@@ -637,17 +637,23 @@ async def cmd_adminlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await send_auto_delete_msg(context, update.effective_chat.id, text, delay=120)
     except Exception as e:
         await send_auto_delete_msg(context, update.effective_chat.id, f"❌ Failed to fetch adminlist: {str(e)}", delay=120)
-        
 
-# --- Combat Commands ---
-SYMBOLS = "𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙ঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣ𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙",
+# 8 Alag-alag heavy decorative symbols (Badi length wale)
+SYMBOLS_LIST = [
+    "𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙",
+    "ঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣ
 
-"ঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣ"
+def to_bold_font(text):
+    # Text ko bold/stylish font (Mathematical Sans-Serif Bold) me convert karne ke liye helper
+    normal = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+    bold = "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝑄𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝗤𝘆𝘇𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵"
+    trans = str.maketrans(normal, bold)
+    return text.translate(trans)
 
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
-    speed = 0.3
+    speed = 0.1  # Default speed fast 0.1s kar di hai
     name = "KRISHSLAYIN"
 
     if args:
@@ -657,35 +663,46 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except ValueError:
             name = " ".join(args)
 
-    name = f"{name} {SYMBOLS}"
+    # Text ko bold font me convert kiya
+    styled_name = to_bold_font(name)
 
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcnc" in chat_data["tasks"]: chat_data["tasks"]["gcnc"].cancel()
 
     async def multi_gcnc_loop():
-        titles = [f"⚡ {name} ⚡", f"🔥 {name} 🔥", f"👑 {name} 👑"]
-        title_idx = 0
+        sym_idx = 0
         bot_idx = 0
         total_bots = len(BOT_INSTANCES)
         while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
-            try:
-                await current_bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[title_idx % len(titles)])
-                title_idx += 1
-            except Exception: pass
-            bot_idx += 1
-            await asyncio.sleep(speed if speed > 0 else 0.05)
+            # 0.1 second me 4 alag-alag bots ek sath parallel gcnc request bhejenge (load divide karne ke liye)
+            batch_bots = [BOT_INSTANCES[(bot_idx + i) % total_bots] for i in range(min(4, total_bots))]
+            
+            async def update_title(bot):
+                nonlocal sym_idx
+                try:
+                    current_symbol = SYMBOLS_LIST[sym_idx % len(SYMBOLS_LIST)]
+                    full_title = f"{styled_name} {current_symbol}"
+                    await bot.set_chat_title(chat_id=update.effective_chat.id, title=full_title)
+                except Exception:
+                    pass
+
+            # 4 bots ek saath 0.01ms ke andar execute honge
+            await asyncio.gather(*(update_title(b) for b in batch_bots))
+            
+            sym_idx += 1
+            bot_idx += 4
+            await asyncio.sleep(speed if speed > 0 else 0.1)
 
     task = asyncio.create_task(multi_gcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await send_auto_delete_msg(context, update.effective_chat.id, f"⚔️ All {len(BOT_INSTANCES)} Cluster Bots engaged in GCNC Loop (Speed: {speed}s).", delay=120)
+    await send_auto_delete_msg(context, update.effective_chat.id, f"⚔️ 4 Cluster Bots firing simultaneously in GCNC Loop (Speed: {speed}s).", delay=120)
 
 async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     raw_text = update.message.text.replace("+vgcnc", "").strip()
     parts = raw_text.split(" ", 1)
     
-    speed = 0.3
+    speed = 0.1
     titles_raw = ""
 
     if len(parts) > 0:
@@ -695,8 +712,12 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except ValueError:
             titles_raw = raw_text
 
-    titles = [f"{t.strip()} {SYMBOLS}" for t in titles_raw.split("|") if t.strip()]
-    if not titles: return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +vgcnc [speed] Title 1 | Title 2", delay=120)
+    # Alag-alag titles ko bold font me convert kiya aur 8 symbols ke sath map kiya
+    user_titles = [t.strip() for t in titles_raw.split("|") if t.strip()]
+    if not user_titles: 
+        return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +vgcnc [speed] Title 1 | Title 2", delay=120)
+
+    titles = [f"{to_bold_font(t)} {SYMBOLS_LIST[i % len(SYMBOLS_LIST)]}" for i, t in enumerate(user_titles)]
 
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcnc" in chat_data["tasks"]: chat_data["tasks"]["gcnc"].cancel()
@@ -706,17 +727,25 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
         bot_idx = 0
         total_bots = len(BOT_INSTANCES)
         while True:
-            current_bot = BOT_INSTANCES[bot_idx % total_bots]
-            try:
-                await current_bot.set_chat_title(chat_id=update.effective_chat.id, title=titles[title_idx % len(titles)])
-                title_idx += 1
-            except Exception: pass
-            bot_idx += 1
-            await asyncio.sleep(speed if speed > 0 else 0.05)
+            batch_bots = [BOT_INSTANCES[(bot_idx + i) % total_bots] for i in range(min(4, total_bots))]
+            
+            async def update_vgcnc_title(bot):
+                nonlocal title_idx
+                try:
+                    current_title = titles[title_idx % len(titles)]
+                    await bot.set_chat_title(chat_id=update.effective_chat.id, title=current_title)
+                except Exception:
+                    pass
+
+            await asyncio.gather(*(update_vgcnc_title(b) for b in batch_bots))
+            
+            title_idx += 1
+            bot_idx += 4
+            await asyncio.sleep(speed if speed > 0 else 0.1)
 
     task = asyncio.create_task(multi_vgcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await send_auto_delete_msg(context, update.effective_chat.id, f"⚡ All {len(BOT_INSTANCES)} Cluster Bots engaged in VGCNC Rotator (Speed: {speed}s).", delay=120)
+    await send_auto_delete_msg(context, update.effective_chat.id, f"⚡ 4 Cluster Bots firing simultaneously in VGCNC Rotator (Speed: {speed}s).", delay=120)
 
 async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
