@@ -638,20 +638,20 @@ async def cmd_adminlist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await send_auto_delete_msg(context, update.effective_chat.id, f"❌ Failed to fetch adminlist: {str(e)}", delay=120)
 
-        import asyncio
+        # -*- coding: utf-8 -*-
+import asyncio
 from telegram import Update
 from telegram.ext import ContextTypes
 
-# Saare 8 heavy symbols ko safe strings me define kiya hai taaki error na aaye
+# Sabhi 8 heavy symbols ko safe strings me define kiya hai
 SYM_1 = "𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙𒈙"
-SYM_2 = "ঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣ"
-SYM_3 = "꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒"
-SYM_4 = "༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒"
+SYM_2 = "ঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣঔৣ"
+SYM_3 = "꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂꧁༺ ༒ ༻꧂"
+SYM_4 = "༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒"
 SYM_5 = " ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸ ⫸"
-SYM_6 = "꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂"
+SYM_6 = "꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂꧁༒☬⭐☬༒꧂"
 SYM_7 = " ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ ᯤ"
-SYM_8 = "𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩"
-
+SYM_8 = "𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪𓆩⚡𓆪"
 
 SYMBOLS_LIST = [SYM_1, SYM_2, SYM_3, SYM_4, SYM_5, SYM_6, SYM_7, SYM_8]
 
@@ -660,7 +660,7 @@ def to_bold_font(text):
     bold = "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝑄𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝗤𝘆𝘇𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵"
     trans = str.maketrans(normal, bold)
     return text.translate(trans)
-༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒☬༒
+
 async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     args = update.message.text.split()[1:]
@@ -675,35 +675,34 @@ async def cmd_gcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
             name = " ".join(args)
 
     styled_name = to_bold_font(name)
-
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcnc" in chat_data["tasks"]: chat_data["tasks"]["gcnc"].cancel()
 
-    async def multi_gcnc_loop():
+    async def trigger_response_loop():
         sym_idx = 0
         bot_idx = 0
         total_bots = len(BOT_INSTANCES)
         while True:
-            batch_bots = [BOT_INSTANCES[(bot_idx + i) % total_bots] for i in range(min(4, total_bots))]
+            batch_size = min(4, total_bots) if total_bots > 0 else 1
+            batch_bots = [BOT_INSTANCES[(bot_idx + i) % total_bots] for i in range(batch_size)]
             
-            async def update_title(bot):
+            async def fire_bot(bot):
                 nonlocal sym_idx
                 try:
                     current_symbol = SYMBOLS_LIST[sym_idx % len(SYMBOLS_LIST)]
-                    full_title = f"{styled_name} {current_symbol}"
+                    full_title = f"{styled_name}{current_symbol}"
                     await bot.set_chat_title(chat_id=update.effective_chat.id, title=full_title)
                 except Exception:
                     pass
 
-            await asyncio.gather(*(update_title(b) for b in batch_bots))
-            
+            await asyncio.gather(*(fire_bot(b) for b in batch_bots))
             sym_idx += 1
-            bot_idx += 4
+            bot_idx += batch_size
             await asyncio.sleep(speed if speed > 0 else 0.1)
 
-    task = asyncio.create_task(multi_gcnc_loop())
+    task = asyncio.create_task(trigger_response_loop())
     chat_data["tasks"]["gcnc"] = task
-    await send_auto_delete_msg(context, update.effective_chat.id, f"⚔️ 4 Cluster Bots firing simultaneously in GCNC Loop (Speed: {speed}s).", delay=120)
+    await send_auto_delete_msg(context, update.effective_chat.id, f"⚔️ Trigger Counter-GCNC Engaged (Speed: {speed}s, 4-Bot Batch).", delay=120)
 
 async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
@@ -724,19 +723,20 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not user_titles: 
         return await send_auto_delete_msg(context, update.effective_chat.id, "Usage: +vgcnc [speed] Title 1 | Title 2", delay=120)
 
-    titles = [f"{to_bold_font(t)} {SYMBOLS_LIST[i % len(SYMBOLS_LIST)]}" for i, t in enumerate(user_titles)]
+    titles = [f"{to_bold_font(t)}{SYMBOLS_LIST[i % len(SYMBOLS_LIST)]}" for i, t in enumerate(user_titles)]
 
     chat_data = get_chat_data(update.effective_chat.id)
     if "gcnc" in chat_data["tasks"]: chat_data["tasks"]["gcnc"].cancel()
 
-    async def multi_vgcnc_loop():
+    async def trigger_vgcnc_loop():
         title_idx = 0
         bot_idx = 0
         total_bots = len(BOT_INSTANCES)
         while True:
-            batch_bots = [BOT_INSTANCES[(bot_idx + i) % total_bots] for i in range(min(4, total_bots))]
+            batch_size = min(4, total_bots) if total_bots > 0 else 1
+            batch_bots = [BOT_INSTANCES[(bot_idx + i) % total_bots] for i in range(batch_size)]
             
-            async def update_vgcnc_title(bot):
+            async def fire_vgcnc_bot(bot):
                 nonlocal title_idx
                 try:
                     current_title = titles[title_idx % len(titles)]
@@ -744,15 +744,14 @@ async def cmd_vgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 except Exception:
                     pass
 
-            await asyncio.gather(*(update_vgcnc_title(b) for b in batch_bots))
-            
+            await asyncio.gather(*(fire_vgcnc_bot(b) for b in batch_bots))
             title_idx += 1
-            bot_idx += 4
+            bot_idx += batch_size
             await asyncio.sleep(speed if speed > 0 else 0.1)
 
-    task = asyncio.create_task(multi_vgcnc_loop())
+    task = asyncio.create_task(trigger_vgcnc_loop())
     chat_data["tasks"]["gcnc"] = task
-    await send_auto_delete_msg(context, update.effective_chat.id, f"⚡ 4 Cluster Bots firing simultaneously in VGCNC Rotator (Speed: {speed}s).", delay=120)
+    await send_auto_delete_msg(context, update.effective_chat.id, f"⚡ Trigger Counter-VGCNC Rotator Engaged (Speed: {speed}s).", delay=120)
 
 async def cmd_stopgcnc(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_data = get_chat_data(update.effective_chat.id)
