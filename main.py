@@ -1160,12 +1160,12 @@ async def cmd_mutelist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     muted = get_chat_data(update.effective_chat.id)["muted"]
     text = "🔇 MUTED TARGETS:\n" + "\n".join([f"• {uid}" for uid in muted]) if muted else "No muted users."
     await send_auto_delete_msg(context, update.effective_chat.id, text, delay=120)
+    
 
     async def cmd_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Sirf admins ya owner use kar sakte hain
-    if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
-        
-        return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Permission Denied!", delay=120)
+       if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):    
+               return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Permission Denied!", delay=120)
     
     chat_data = get_chat_data(update.effective_chat.id)
     # Status toggle karna (True se False, False se True)
