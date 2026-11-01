@@ -1164,11 +1164,13 @@ async def cmd_mutelist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     async def cmd_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Sirf admins ya owner use kar sakte hain
     if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
+        
         return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Permission Denied!", delay=120)
     
     chat_data = get_chat_data(update.effective_chat.id)
     # Status toggle karna (True se False, False se True)
     current_state = chat_data.get("url_stripper", False)
+    
     new_state = not current_state
     chat_data["url_stripper"] = new_state
     
