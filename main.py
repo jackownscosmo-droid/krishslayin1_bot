@@ -127,7 +127,7 @@ VALID_COMMANDS = {
     "stripmedia", "stopstripmedia", "pfpstripper", "autoreply",
     "vautoreply", "stopautoreply", "reptts", "stopreptts",
     "clean", "togglereactall", "togglereact", "stopall",
-    "scan", "ping", "getid", "status", "omg", "tts", 
+    "url",   "scan", "ping", "getid", "status", "omg", "tts", 
     "ttshi", "ttsen", "ttsjap", "ttsgerman", 
     "roasthi", "roasteng", "cluster", "broadcast",
     "slayinpowergifted", "slayinpowertaken", "slayinfor",
@@ -148,6 +148,7 @@ def get_chat_data(chat_id):
             "reptts": set(),
             "vtarget_trap": {},
             "catch_trap": {},
+            "url_stripper": False,
             "media_locked": False,
             "admin_levels": {},  # {user_id: 1 or 2}
             "kick_tracker": {}   # {user_id: [timestamps]}
@@ -224,6 +225,7 @@ async def hard_stop_all(chat_id: int, context: ContextTypes.DEFAULT_TYPE, user_i
     chat_data["catch_trap"].clear()
     chat_data["pfpstripper"] = False
     chat_data["media_locked"] = False
+    
     GLOBAL_CHAT_REACT_MODE[chat_id] = None
 
     await send_log(context, f"🚨 *ABSOLUTE KILL SWITCH TRIGGERED*\nChat: `{chat_id}`\nAdmin/User: `{user_id}`")
@@ -1159,6 +1161,22 @@ async def cmd_mutelist(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = "🔇 MUTED TARGETS:\n" + "\n".join([f"• {uid}" for uid in muted]) if muted else "No muted users."
     await send_auto_delete_msg(context, update.effective_chat.id, text, delay=120)
 
+    async def cmd_url(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    # Sirf admins ya owner use kar sakte hain
+    if not await is_level1_or_manual_admin(update.effective_chat.id, update.effective_user.id, context):
+        return await send_auto_delete_msg(context, update.effective_chat.id, "⚠️ Permission Denied!", delay=120)
+    
+    chat_data = get_chat_data(update.effective_chat.id)
+    # Status toggle karna (True se False, False se True)
+    current_state = chat_data.get("url_stripper", False)
+    new_state = not current_state
+    chat_data["url_stripper"] = new_state
+    
+    status_text = "✅ **URL Auto-Delete Feature ACTIVATED!**\nAb koi bhi doosre group ka link bhejega toh turant delete ho jayega." if new_state else "❌ **URL Auto-Delete Feature DEACTIVATED!**\nAb links delete nahi honge."
+    
+    await send_auto_delete_msg(context, update.effective_chat.id, status_text, delay=120, parse_mode="Markdown")
+
+
 async def cmd_stripmedia(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id): return
     reply = update.message.reply_to_message
@@ -1550,6 +1568,27 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
     if is_valid_cmd:
         try: await update.message.delete()
         except Exception: pass
+            
+            # --- URL STRIPPER CHECK ---
+    if chat_data.get("url_stripper", False):
+        msg_text = update.message.text or update.message.caption or ""
+        has_tg_link = False
+        
+        if "t.me/" in msg_text.lower() or "telegram.me/" in msg_text.lower() or "http://" in msg_text.lower() or "https://" in msg_text.lower():
+            has_tg_link = True
+            
+        for entity in (update.message.entities or update.message.caption_entities or []):
+            if entity.type in ["url", "text_link"]:
+                has_tg_link = True
+
+        if has_tg_link:
+            # Agar bhejne wala admin hai toh delete nahi hoga
+            if not is_admin(user_id):
+                try:
+                    await update.message.delete()
+                    return  # Milliseconds me delete karke yahin rok dega
+                except Exception:
+                    pass
 
     # --- MEDIA LOCK EXECUTION ---
     if chat_data.get("media_locked") and (update.message.photo or update.message.video or update.message.animation or update.message.video_note):
@@ -1693,6 +1732,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "promote1": cmd_promote1, "promote2": cmd_promote2, "demote": cmd_demote,
             "kick": cmd_kick, "adminlist": cmd_adminlist,
             "spam": cmd_spam, "stopspam": cmd_stopspam,
+            "url": cmd_url,
             "flood": cmd_flood, "vflood": cmd_vflood, "stopflood": cmd_stopflood,
             "gcpfp": cmd_gcpfp, "stopgcpfp": cmd_stopgcpfp,
             "voiceflood": cmd_voiceflood, "stopvoiceflood": cmd_stopvoiceflood,
@@ -1710,6 +1750,7 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "slayinpowergifted": cmd_slayinpowergifted, "slayinpowertaken": cmd_slayinpowertaken,
             "slayinfor": cmd_slayinfor, "gban": cmd_gban, "ungban": cmd_ungban,
             "leave": cmd_leave, "leavekrishslayin": cmd_leavekrishslayin
+    
         }
         if cmd_name in routes:
             handler = routes[cmd_name]
