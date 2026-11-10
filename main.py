@@ -1734,7 +1734,6 @@ async def global_message_router(update: Update, context: ContextTypes.DEFAULT_TY
             "promote1": cmd_promote1, "promote2": cmd_promote2, "demote": cmd_demote,
             "kick": cmd_kick, "adminlist": cmd_adminlist,
             "spam": cmd_spam, "stopspam": cmd_stopspam,
-            "url": cmd_url,
             "flood": cmd_flood, "vflood": cmd_vflood, "stopflood": cmd_stopflood,
             "gcpfp": cmd_gcpfp, "stopgcpfp": cmd_stopgcpfp,
             "voiceflood": cmd_voiceflood, "stopvoiceflood": cmd_stopvoiceflood,
